@@ -72,6 +72,12 @@ button-text {
     width: 150px;
     height: auto;
 }
+.ellenfelek {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
 
 @keyframes panInOut {
     0%, 100% {
