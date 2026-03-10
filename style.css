@@ -1,140 +1,206 @@
 html,
 body {
-    margin: 0;
-    padding: 0;
-    min-height: 100%;
-    overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
-    background: linear-gradient(to top, #000000, #ffffff);
+  background: linear-gradient(to top, #000000, #ffffff);
+}
+
+a {
+  color: white;
+  text-decoration: none;
 }
 
 button {
-    background-color: #000000;
-    color: #ffffff;
-    border: 2px solid #ffffff;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 15px;
-    transition: all 0.3s ease;
-    border-radius: 5px;
+  background-color: #000000;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+  border-radius: 5px;
 }
 
 button:hover {
-    background-color: #ffffff;
-    color: #000000;
-    transform: scale(1.1);
+  background-color: #ffffff;
+  color: #000000;
+  transform: scale(1.1);
 }
 
 .button-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-around;
-    height: 60%;
-    margin-top: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  height: 60%;
+  margin-top: 20%;
 }
 
 .button-container div {
-    text-align: center;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .button-container div:first-child {
-    left: 10%;
+  left: 10%;
 }
 
 .button-container div:last-child {
-    right: 10%;
+  right: 10%;
 }
 
 button-text {
-    display: block;
-    text-align: center;
-    font-size: 36px;
-    font-weight: bold;
-    color: #ffffff;
-    margin-bottom: 20px;
+  display: block;
+  text-align: center;
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+button:hover a {
+  color: black;
 }
 
 .title-animation {
-    text-align: center;
-    animation: panInOut 3s infinite;
-    margin-top: 10%;
+  text-align: center;
+  animation: panInOut 3s infinite;
+  margin-top: 10%;
 }
+
 .Logo {
-    display: block;
-    margin: 20px auto;
-    width: 150px;
-    height: auto;
+  display: block;
+  margin: 20px auto;
+  width: 150px;
+  height: auto;
 }
+
 .ellenfelek {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes panInOut {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.2);
-    }
+.placeholderimg {
+  height: 245px;
+  width: 265px;
 }
 
-.fade-in {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 1.5s ease, transform 1.5s ease;
+.robotimg {
+  height: 300px;
+  width: 520px;
+}
+
+.kezjelek {
+  display: flex;
+  gap: 42px;
+  align-items: center;
+}
+
+.jatekos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Aligns player content to the left */
+  text-align: left;
+}
+
+.robot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Aligns robot content to the right */
+  text-align: right;
 }
 
 @media (max-width: 768px) {
-    .button-container div:first-child {
-        left: 5%;
-    }
-
-    .button-container div:last-child {
-        right: 5%;
-    }
-
-    button-text {
-        font-size: 36px;
-    }
-
-    button {
-        font-size: 14px;
-        padding: 8px 16px;
+    body {
+        flex-direction: column;
+        gap: 40px;
     }
 }
 
+@keyframes panInOut {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 1.5s ease, transform 1.5s ease;
+}
+
+.game-container {
+  display: flex;
+  justify-content: space-evenly; /* Adds more space between player and robot */
+  align-items: center; /* Aligns items vertically in the center */
+  margin: 50px auto;
+  width: 90%;
+  max-width: 1200px;
+  height: 100vh; /* Ensures the container takes full viewport height */
+}
+
+/* Optional: Add spacing between the images and their respective labels */
+.jatekos .placeholderimg,
+.robot .robotimg {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .button-container div:first-child {
+    left: 5%;
+  }
+
+  .button-container div:last-child {
+    right: 5%;
+  }
+
+  button-text {
+    font-size: 36px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+}
+
 @media (max-width: 480px) {
-    .button-container {
-        height: auto;
-        margin-top: 30%;
-        flex-direction: column;
-        align-items: center;
-    }
+  .button-container {
+    height: auto;
+    margin-top: 30%;
+    flex-direction: column;
+    align-items: center;
+  }
 
-    .button-container div {
-        position: static;
-        transform: none;
-        margin-bottom: 20px;
-        text-align: center;
-    }
+  .button-container div {
+    position: static;
+    transform: none;
+    margin-bottom: 20px;
+    text-align: center;
+  }
 
-    button-text {
-        font-size: 24px;
-        margin-bottom: 15px;;
-    }
+  button-text {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
 
-    button {
-        font-size: 14px;
-        padding: 8px 16px;
-    }
+  button {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
 }

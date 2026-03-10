@@ -24,7 +24,7 @@ myButton.addEventListener("click", () => {
     egyjatekos.style.display = "none";
     tobbjatekos.style.display = "none";
 
-    fadeIn(mcisti);
-    fadeIn(subi);
-    fadeIn(varga);
+    fadeIn(konnyu);
+    fadeIn(kozepes);
+    fadeIn(nehez);
 });

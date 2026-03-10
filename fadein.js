@@ -5,6 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             el.style.opacity = "1";
             el.style.transform = "translateY(0)";
-        }, index * 500); // Increased delay
+        }, index * 500); 
     });
 });
