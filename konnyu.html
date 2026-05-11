@@ -1,30 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" href="style.css" />
-    <title>KPOTournaments</title>
-  </head>
+﻿<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
+  <link rel="stylesheet" href="style.css" />
+  <title>KPOTournaments — Könnyű</title>
+</head>
+<body data-difficulty="easy">
+  <div class="countdown-overlay visible" id="countdown-overlay">
+    <div class="countdown-number" id="countdown-number">3</div>
+    <div class="countdown-label">A játék hamarosan kezdődik</div>
+  </div>
+  <div class="game-over-overlay hidden" id="game-over-overlay">
+    <div class="game-over-message">Vesztettél!</div>
+    <button id="new-game-button">Új játék</button>
+  </div>
+  <div class="game-page hidden">
+    <header class="game-header">
+      <div class="status-card player-card">
+        <h1>Játékos</h1>
+        <div class="health-line">
+          <span class="health-label">Életerő</span>
+          <div class="health-track">
+            <div class="health-fill" id="player-health-fill"></div>
+          </div>
+          <span class="health-value"><span id="player-life">3</span>/<span id="player-max-life">3</span></span>
+        </div>
+        <div class="status-label" id="player-effect">Nincs hatás</div>
+        <div class="hotbar" id="player-hotbar"></div>
+      </div>
+      <div class="round-card">
+        <div class="round-number" id="round-number">Kör 1</div>
+        <div class="battle-message" id="battle-message">Válassz jelet!</div>
+      </div>
+      <div class="status-card robot-card">
+        <h1>AI</h1>
+        <div class="health-line">
+          <span class="health-label">Életerő</span>
+          <div class="health-track">
+            <div class="health-fill robot" id="robot-health-fill"></div>
+          </div>
+          <span class="health-value"><span id="robot-life">3</span>/<span id="robot-max-life">3</span></span>
+        </div>
+        <div class="status-label" id="robot-effect">Nincs hatás</div>
+        <div class="hotbar robot-hotbar" id="robot-hotbar"></div>
+      </div>
+    </header>
 
-  <body>
-    <div class="jatekos col-2 container"> 
-      <img src="placeholder_img.png" class="placeholderimg" alt="Játékos" />
-      <div class="kezjelek">
-        <button>✊</button>
-        <button>✋</button>
-        <button>✌</button> 
+    <div class="game-container">
+      <section class="game-side jatekos">
+        <h2>Játékos választás</h2>
+        <div class="side-card">
+          <img src="placeholder_img.png" class="placeholderimg" alt="Játékos" />
+          <div class="kezjelek">
+            <button class="move-button" data-move="rock">✊</button>
+            <button class="move-button" data-move="paper">✋</button>
+            <button class="move-button" data-move="scissors">✌</button>
+          </div>
+        </div>
+      </section>
+      <div class="vs-label">VS</div>
+      <section class="game-side robot">
+        <h2>AI ellenfél</h2>
+        <div class="side-card">
+          <img src="Robot.png" class="robotimg" alt="Robot" />
+          <div class="robot-note">Az AI a saját itemjeit automatikusan használja, ha szükséges.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="chest-panel hidden" id="chest-panel">
+      <img src="Lada.png" alt="Láda" class="chest-img" />
+      <div class="chest-text">Láda kinyílt!</div>
+      <div class="chest-results">
+        <div><strong>Játékos:</strong> <span id="chest-player-item">-</span></div>
+        <div><strong>AI:</strong> <span id="chest-robot-item">-</span></div>
       </div>
     </div>
-    <div class="robot col-2 container">
-        <img src="Robot.png" class="robotimg" alt="Robot">
+  </div>
 
-    </div>
-  </body>
+  <script src="game.js"></script>
+</body>
 </html>
