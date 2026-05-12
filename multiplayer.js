@@ -23,7 +23,9 @@ function initSocket() {
             reconnection: true,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
-            reconnectionAttempts: Infinity
+            reconnectionAttempts: Infinity,
+            // Use polling for rackhost compatibility
+            transports: ['polling', 'websocket']
         });
         console.log('Socket.IO initialized', serverUrl);
     } else {
