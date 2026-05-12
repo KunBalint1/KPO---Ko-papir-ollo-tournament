@@ -62,6 +62,8 @@ def normalize_room_identifier(room_code):
     value = value.split('/')[0]
     if ':' in value:
         value = value.split(':', 1)[0]
+    if value in ('localhost', '127.0.0.1', '::1'):
+        value = get_lan_ip()
     return value
 
 def generate_room_code():
@@ -92,7 +94,8 @@ def handle_create_room(data):
     player_name = data['player_name']
     game_type = data.get('game_type', '1v1')
 
-    room_code = get_lan_ip()
+    requested_identifier = normalize_room_identifier(data.get('room_identifier', ''))
+    room_code = requested_identifier or get_lan_ip()
 
     rooms[room_code] = {
         'code': room_code,

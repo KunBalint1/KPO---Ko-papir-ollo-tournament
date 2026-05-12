@@ -143,9 +143,11 @@ function setupSocketHandlers() {
 }
 
 function createMultiplayerRoom(playerName, gameType) {
+  const roomIdentifier = normalizeRoomIdentifier(getCurrentMultiplayerServer());
   socket.emit("create_room", {
     player_name: playerName,
     game_type: gameType,
+    room_identifier: roomIdentifier,
   });
 }
 
