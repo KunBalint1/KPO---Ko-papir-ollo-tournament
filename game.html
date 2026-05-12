@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Játék - Kő, Papír, Olló</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .room-code {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .game-status {
+            text-align: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .waiting-indicator {
+            display: inline-block;
+            font-size: 20px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .players-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .player-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .player-card.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .player-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .player-score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .player-choice {
+            font-size: 48px;
+            margin: 10px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choices-section {
+            margin: 25px 0;
+        }
+
+        .choices-title {
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .choice-btn {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 32px;
+            transition: all 0.3s;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choice-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .choice-btn:active {
+            transform: translateY(0);
+        }
+
+        .choice-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .result-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .result-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .round-text {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .next-round-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .next-round-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .next-round-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-copy:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-leave {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-leave:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: none;
+            animation: slideInRight 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .players-section {
+                grid-template-columns: 1fr;
+            }
+
+            .player-score {
+                font-size: 28px;
+            }
+
+            .player-choice {
+                font-size: 40px;
+            }
+
+            .choices-grid {
+                gap: 10px;
+            }
+
+            .choice-btn {
+                padding: 15px;
+                font-size: 28px;
+            }
+
+            .notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>⚔️ Játék</h1>
+            <div class="room-code" id="roomCodeDisplay"></div>
+        </div>
+
+        <div class="game-status">
+            <div class="status-title" id="statusTitle">Szoba betöltése...</div>
+            <div id="statusMessage"></div>
+        </div>
+
+        <div class="players-section" id="playersSection" style="display: none;">
+            <div class="player-card" id="player1Card">
+                <div class="player-name" id="player1Name">Játékos 1</div>
+                <div class="player-score" id="player1Score">0</div>
+                <div class="player-choice" id="player1Choice"></div>
+            </div>
+
+            <div class="player-card" id="player2Card">
+                <div class="player-name" id="player2Name">Várakozás...</div>
+                <div class="player-score" id="player2Score">0</div>
+                <div class="player-choice" id="player2Choice"></div>
+            </div>
+        </div>
+
+        <div class="choices-section" id="choicesSection" style="display: none;">
+            <div class="choices-title">Válassza ki a lépését:</div>
+            <div class="choices-grid">
+                <button class="choice-btn" onclick="selectChoice('kő')">🪨</button>
+                <button class="choice-btn" onclick="selectChoice('papír')">📄</button>
+                <button class="choice-btn" onclick="selectChoice('olló')">✂️</button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-text" id="resultText"></div>
+            <div class="round-text" id="roundText"></div>
+            <button class="next-round-btn" onclick="nextRound()">Következő kör</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-copy" onclick="copyRoomCode()">📋 Kód másolása</button>
+            <button class="btn btn-leave" onclick="leaveGame()">🚪 Kilépés</button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script src="multiplayer.js"></script>
+    <script>
+        let gameState = {
+            roomCode: null,
+            playerName: null,
+            isHost: false,
+            players: [],
+            currentRound: 1,
+            maxRounds: 1,
+            scores: { player1: 0, player2: 0 },
+            choices: { player1: null, player2: null },
+            gameStarted: false
+        };
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            gameState.roomCode = urlParams.get('room');
+            gameState.playerName = decodeURIComponent(urlParams.get('player') || '');
+
+            if (!gameState.roomCode || !gameState.playerName) {
+                window.location.href = 'tobbjatekos.html';
+                return;
+            }
+
+            document.getElementById('roomCodeDisplay').textContent = `Szoba: ${gameState.roomCode}`;
+
+            loadRoomData();
+            startPolling();
+        }
+
+        function loadRoomData() {
+            const roomData = localStorage.getItem(`room_${gameState.roomCode}`);
+            if (!roomData) {
+                showStatus('A szoba már nem létezik!');
+                setTimeout(() => window.location.href = 'tobbjatekos.html', 2000);
+                return;
+            }
+
+            const room = JSON.parse(roomData);
+            gameState.isHost = room.host === gameState.playerName;
+            gameState.players = room.players;
+            gameState.maxRounds = room.type === 'best_of_3' ? 3 : room.type === 'best_of_5' ? 5 : 1;
+
+            updateUI();
+        }
+
+        function startPolling() {
+            setInterval(loadRoomData, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('playersSection').style.display = 'grid';
+            document.getElementById('choicesSection').style.display = 'block';
+
+            const player1 = gameState.players[0];
+            const player2 = gameState.players[1];
+
+            document.getElementById('player1Name').textContent = player1.name;
+            document.getElementById('player1Score').textContent = gameState.scores.player1;
+
+            if (player2) {
+                document.getElementById('player2Name').textContent = player2.name;
+                document.getElementById('player2Score').textContent = gameState.scores.player2;
+                document.getElementById('statusTitle').textContent = `Kör ${gameState.currentRound}`;
+                document.getElementById('statusMessage').textContent = 'Tegyen lépést!';
+                gameState.gameStarted = true;
+            } else {
+                document.getElementById('statusTitle').textContent = '⏳ Várakozás';
+                document.getElementById('statusMessage').textContent = `Szoba kód: ${gameState.roomCode}`;
+            }
+
+            updatePlayerCards();
+        }
+
+        function updatePlayerCards() {
+            const player1Card = document.getElementById('player1Card');
+            const player2Card = document.getElementById('player2Card');
+
+            if (gameState.playerName === gameState.players[0].name) {
+                player1Card.classList.add('active');
+                player2Card.classList.remove('active');
+            } else {
+                player1Card.classList.remove('active');
+                player2Card.classList.add('active');
+            }
+        }
+
+        function selectChoice(choice) {
+            if (!gameState.gameStarted || !gameState.players[1]) return;
+
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            event.target.closest('.choice-btn').classList.add('selected');
+
+            const playerIndex = gameState.playerName === gameState.players[0].name ? 0 : 1;
+            gameState.choices[`player${playerIndex + 1}`] = choice;
+
+            const emoji = { 'kő': '🪨', 'papír': '📄', 'olló': '✂️' };
+            document.getElementById(`player${playerIndex + 1}Choice`).textContent = emoji[choice];
+
+            saveRoomData();
+            checkRoundComplete();
+        }
+
+        function checkRoundComplete() {
+            if (gameState.choices.player1 && gameState.choices.player2) {
+                determineRoundWinner();
+            }
+        }
+
+        function determineRoundWinner() {
+            const p1 = gameState.choices.player1;
+            const p2 = gameState.choices.player2;
+
+            let result = '';
+            if (p1 === p2) {
+                result = `🤝 Döntetlen!`;
+            } else if (
+                (p1 === 'kő' && p2 === 'olló') ||
+                (p1 === 'papír' && p2 === 'kő') ||
+                (p1 === 'olló' && p2 === 'papír')
+            ) {
+                result = `🎉 ${gameState.players[0].name} nyert!`;
+                gameState.scores.player1++;
+            } else {
+                result = `🎉 ${gameState.players[1].name} nyert!`;
+                gameState.scores.player2++;
+            }
+
+            document.getElementById('resultText').textContent = result;
+            document.getElementById('roundText').textContent = `${gameState.currentRound}. kör vége`;
+            document.getElementById('resultSection').classList.add('show');
+
+            saveRoomData();
+        }
+
+        function nextRound() {
+            if (gameState.currentRound >= gameState.maxRounds) {
+                endGame();
+                return;
+            }
+
+            gameState.currentRound++;
+            gameState.choices = { player1: null, player2: null };
+            document.getElementById('resultSection').classList.remove('show');
+            document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('player1Choice').textContent = '';
+            document.getElementById('player2Choice').textContent = '';
+
+            saveRoomData();
+        }
+
+        function endGame() {
+            const winner = gameState.scores.player1 > gameState.scores.player2 
+                ? gameState.players[0].name 
+                : gameState.scores.player2 > gameState.scores.player1 
+                ? gameState.players[1].name 
+                : 'Döntetlen';
+
+            alert(`🏆 Játék vége!\n\n${gameState.players[0].name}: ${gameState.scores.player1}\n${gameState.players[1].name}: ${gameState.scores.player2}\n\nNyertes: ${winner}`);
+            leaveGame();
+        }
+
+        function saveRoomData() {
+            const roomData = localStorage.getItem(`room_${gameState.roomCode}`);
+            if (roomData) {
+                const room = JSON.parse(roomData);
+                room.scores = gameState.scores;
+                room.choices = gameState.choices;
+                room.currentRound = gameState.currentRound;
+                localStorage.setItem(`room_${gameState.roomCode}`, JSON.stringify(room));
+            }
+        }
+
+        function copyRoomCode() {
+            navigator.clipboard.writeText(gameState.roomCode).then(() => {
+                showNotification('Szoba kód másolva!');
+            });
+        }
+
+        function leaveGame() {
+            localStorage.removeItem(`room_${gameState.roomCode}`);
+            localStorage.removeItem('currentRoom');
+            localStorage.removeItem('currentPlayer');
+            window.location.href = 'tobbjatekos.html';
+        }
+
+        function showStatus(message) {
+            document.getElementById('statusTitle').textContent = message;
+        }
+
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
