@@ -5,6 +5,7 @@ import string
 from datetime import datetime
 import json
 import os
+import socket as pysocket
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -28,6 +29,21 @@ def save_leaderboard(leaderboard):
     """Save leaderboard to JSON file"""
     with open(LEADERBOARD_FILE, 'w') as f:
         json.dump(leaderboard, f, indent=2)
+
+def get_lan_ip():
+    """Get best-effort LAN IP address of this host."""
+    test_socket = pysocket.socket(pysocket.AF_INET, pysocket.SOCK_DGRAM)
+    try:
+        # No outbound traffic is required; connect is used for interface discovery.
+        test_socket.connect(('8.8.8.8', 80))
+        return test_socket.getsockname()[0]
+    except Exception:
+        try:
+            return pysocket.gethostbyname(pysocket.gethostname())
+        except Exception:
+            return '127.0.0.1'
+    finally:
+        test_socket.close()
 
 def generate_room_code():
     """Generate a unique 6-character room code"""
@@ -288,6 +304,18 @@ def save_score():
     save_leaderboard(leaderboard)
     
     return jsonify({'success': True, 'entry': new_entry}), 201
+
+@app.route('/host-info', methods=['GET'])
+def host_info():
+    """Return host LAN info for easier multiplayer setup on local network."""
+    lan_ip = get_lan_ip()
+    port = request.host.split(':')[-1] if ':' in request.host else str(os.environ.get('PORT', 5000))
+
+    return jsonify({
+        'lan_ip': lan_ip,
+        'port': int(port),
+        'suggested_url': f'http://{lan_ip}:{port}'
+    })
 
 if __name__ == '__main__':
     import os

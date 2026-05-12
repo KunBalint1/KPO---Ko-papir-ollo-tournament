@@ -175,12 +175,42 @@ button:hover a {
   text-shadow: 0 0 24px rgba(216, 0, 0, 0.45);
 }
 
+.game-over-overlay.win .game-over-message {
+  color: #118a3f;
+  text-shadow: 0 0 24px rgba(17, 138, 63, 0.35);
+}
+
 #new-game-button {
   background: #d80000;
   border-color: #a00000;
   color: white;
   padding: 14px 28px;
   font-size: 1rem;
+}
+
+.game-over-overlay.win #new-game-button {
+  background: #118a3f;
+  border-color: #0d6b31;
+  color: white;
+}
+
+.game-over-overlay.win #new-game-button:hover {
+  background: #16a34a;
+  color: white;
+}
+
+#back-button {
+  background: #f0f0f0;
+  border-color: #b7b7b7;
+  color: #222222;
+  padding: 14px 28px;
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+#back-button:hover {
+  background: #ffffff;
+  color: #000000;
 }
 
 @keyframes countdownPop {
@@ -585,19 +615,22 @@ button:hover a {
 /* Leaderboard Modal Styles */
 .leaderboard-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  right: 20px;
+  bottom: 20px;
+  width: min(420px, calc(100% - 40px));
+  height: auto;
+  max-height: min(80vh, 680px);
+  background: transparent;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-end;
+  align-items: flex-end;
   z-index: 2000;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
   pointer-events: none;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .leaderboard-modal.visible {
@@ -614,13 +647,15 @@ button:hover a {
 
 .leaderboard-content {
   background: white;
-  border-radius: 20px;
-  padding: 40px 30px;
-  max-width: 400px;
+  border: 1px solid rgba(102, 126, 234, 0.12);
+  border-radius: 18px;
+  padding: 28px 24px;
+  max-width: 100%;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
   text-align: center;
   animation: slideUp 0.4s ease-out;
+  overflow-y: auto;
 }
 
 @keyframes slideUp {
@@ -636,16 +671,16 @@ button:hover a {
 
 .leaderboard-content h2 {
   color: #667eea;
-  font-size: 28px;
-  margin-bottom: 20px;
+  font-size: 24px;
+  margin-bottom: 14px;
   margin-top: 0;
 }
 
 .final-time-display {
   background: #f0f4ff;
-  padding: 20px;
+  padding: 14px 16px;
   border-radius: 12px;
-  margin: 20px 0;
+  margin: 14px 0;
 }
 
 .final-time-display p {
@@ -655,12 +690,12 @@ button:hover a {
 
 #player-name-input {
   width: 100%;
-  padding: 12px 15px;
+  padding: 10px 12px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   box-sizing: border-box;
-  margin: 20px 0;
+  margin: 14px 0;
   transition: border-color 0.3s ease;
 }
 
@@ -672,14 +707,14 @@ button:hover a {
 
 .leaderboard-btn {
   width: 100%;
-  padding: 12px 20px;
-  margin: 10px 0;
+  padding: 10px 18px;
+  margin: 8px 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -696,6 +731,20 @@ button:hover a {
 
 .leaderboard-btn.cancel:hover {
   background: #bbb;
+}
+
+@media (max-width: 600px) {
+  .leaderboard-modal {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100% - 20px);
+    padding: 10px;
+  }
+
+  .leaderboard-content {
+    padding: 22px 18px;
+    width: 100%;
+  }
 }
 
 /* Leaderboard Container Styles */

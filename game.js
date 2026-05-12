@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const countdownNumberEl = document.getElementById("countdown-number");
   const gameOverOverlay = document.getElementById("game-over-overlay");
   const newGameButton = document.getElementById("new-game-button");
+  const backButton = document.getElementById("back-button");
 
   let playerLife = config.playerLife;
   let robotLife = config.robotLife;
@@ -54,6 +55,13 @@ document.addEventListener("DOMContentLoaded", () => {
     closeLeaderboardModal();
     window.location.reload();
   });
+
+  if (backButton) {
+    backButton.addEventListener("click", () => {
+      closeLeaderboardModal();
+      window.location.href = "index.html";
+    });
+  }
 
   moveButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -97,9 +105,16 @@ document.addEventListener("DOMContentLoaded", () => {
     gamePage.classList.add("visible");
   }
 
-  function showGameOver() {
+  function showGameOver(result = "lose") {
     if (!gamePage || !gameOverOverlay) {
       return;
+    }
+    gameOverOverlay.classList.remove("win", "lose");
+    gameOverOverlay.classList.add(result === "win" ? "win" : "lose");
+
+    const messageEl = gameOverOverlay.querySelector('.game-over-message');
+    if (messageEl) {
+      messageEl.textContent = result === "win" ? "Nyertél!" : "Vesztettél!";
     }
     gamePage.classList.add("fade-out");
     setTimeout(() => {
@@ -151,26 +166,51 @@ document.addEventListener("DOMContentLoaded", () => {
       alert('Kérjük add meg a nevedet!');
       return;
     }
-    
-    // Save to leaderboard
-    fetch('/save-score', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        player_name: playerName,
-        time: elapsedTime,
-        difficulty: difficulty
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        closeLeaderboardModal();
+
+    const entry = {
+      player_name: playerName,
+      time: elapsedTime,
+      difficulty: difficulty,
+      timestamp: Date.now()
+    };
+
+    const leaderboard = getLeaderboardFromCookie();
+    leaderboard.push(entry);
+    leaderboard.sort((a, b) => (a.time - b.time) || (b.timestamp - a.timestamp));
+
+    // Keep only top 100 entries to avoid oversized cookie.
+    setLeaderboardCookie(leaderboard.slice(0, 100));
+    closeLeaderboardModal();
+    window.location.href = "index.html";
+  }
+
+  function getLeaderboardFromCookie() {
+    const cookieName = "kpo_leaderboard=";
+    const decodedCookie = decodeURIComponent(document.cookie || "");
+    const parts = decodedCookie.split(';');
+
+    for (let i = 0; i < parts.length; i += 1) {
+      let part = parts[i].trim();
+      if (part.indexOf(cookieName) === 0) {
+        try {
+          const value = part.substring(cookieName.length);
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+          console.error("Hibas leaderboard cookie:", err);
+          return [];
+        }
       }
-    })
-    .catch(error => console.error('Error saving score:', error));
+    }
+
+    return [];
+  }
+
+  function setLeaderboardCookie(entries) {
+    const expires = new Date();
+    expires.setMonth(expires.getMonth() + 6);
+    const cookieValue = encodeURIComponent(JSON.stringify(entries));
+    document.cookie = `kpo_leaderboard=${cookieValue}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
   }
 
   function closeLeaderboardModal() {
@@ -250,14 +290,14 @@ document.addEventListener("DOMContentLoaded", () => {
       gameOver = true;
       updateBattleMessage("Vesztettél. A játék véget ért.");
       setButtonsEnabled(false);
-      showGameOver();
+      showGameOver("lose");
       return true;
     }
     if (robotLife <= 0) {
       gameOver = true;
       updateBattleMessage("Nyertél! A robot legyőzve.");
       setButtonsEnabled(false);
-      showGameOver();
+      showGameOver("win");
       return true;
     }
     return false;
@@ -442,6 +482,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateBattleMessage(text) {
     battleMessageEl.textContent = text;
   }
+
+  // Needed because the buttons in HTML use inline onclick handlers.
+  window.saveScoreToLeaderboard = saveScoreToLeaderboard;
+  window.closeLeaderboardModal = closeLeaderboardModal;
 
   updateStatus();
   startCountdown();

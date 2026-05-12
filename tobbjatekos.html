@@ -299,6 +299,20 @@
         </button>
       </div>
 
+      <div class="form-group">
+        <label for="serverAddress">LAN szerver cim (pl. 192.168.1.25:5000)</label>
+        <input
+          type="text"
+          id="serverAddress"
+          placeholder="localhost:5000"
+          maxlength="100"
+        />
+        <div class="button-group" style="margin-top: 10px;">
+          <button class="btn btn-confirm" onclick="saveServerAddress()">Szerver mentese</button>
+        </div>
+        <div id="serverStatus" class="status-message" style="margin-top: 10px;"></div>
+      </div>
+
       <div class="back-link">
         <a href="index.html">← Vissza a főmenübe</a>
       </div>
@@ -507,6 +521,67 @@
           }, 4000);
         }
       }
+
+      function saveServerAddress() {
+        const input = document.getElementById("serverAddress");
+        const status = document.getElementById("serverStatus");
+        const value = input.value.trim();
+
+        if (!value) {
+          showStatus(status, "Adj meg egy szerver cimet!", "error");
+          return;
+        }
+
+        const ok = window.setMultiplayerServer && window.setMultiplayerServer(value);
+        if (!ok) {
+          showStatus(status, "Ervenytelen szerver cim.", "error");
+          return;
+        }
+
+        showStatus(status, "Szerver elmentve. Oldal ujratoltese...", "success");
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
+
+      async function autoDetectHostAddress() {
+        const input = document.getElementById("serverAddress");
+        const status = document.getElementById("serverStatus");
+        if (!input) return;
+
+        try {
+          const response = await fetch("/host-info");
+          if (!response.ok) return;
+          const info = await response.json();
+          if (!info || !info.suggested_url) return;
+
+          const current = window.getCurrentMultiplayerServer
+            ? window.getCurrentMultiplayerServer()
+            : "";
+          const isDefaultLocal = current.includes("localhost") || current.includes("127.0.0.1");
+
+          if (!input.value || isDefaultLocal) {
+            input.value = info.suggested_url;
+            if (window.setMultiplayerServer) {
+              window.setMultiplayerServer(info.suggested_url);
+            }
+          }
+
+          showStatus(
+            status,
+            `Host LAN cim: ${info.lan_ip}:${info.port}`,
+            "success"
+          );
+        } catch (error) {
+          console.error("Host cim auto-detect hiba:", error);
+        }
+      }
+
+      const serverInput = document.getElementById("serverAddress");
+      if (serverInput && window.getCurrentMultiplayerServer) {
+        serverInput.value = window.getCurrentMultiplayerServer();
+      }
+      autoDetectHostAddress();
     </script>
   </body>
 </html>

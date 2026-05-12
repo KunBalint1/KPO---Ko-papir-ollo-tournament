@@ -46,16 +46,36 @@
         // Leaderboard functionality
         let currentDifficulty = 'easy';
 
-        async function loadLeaderboard(difficulty) {
-            try {
-                const response = await fetch(`/leaderboard?difficulty=${difficulty}`);
-                const data = await response.json();
-                displayLeaderboard(data);
-            } catch (error) {
-                console.error('Error loading leaderboard:', error);
-                document.getElementById('leaderboard-list').innerHTML = 
-                    '<p style="color: #666; text-align: center;">Hiba a leaderboard betöltésekor</p>';
+        function getLeaderboardFromCookie() {
+            const cookieName = 'kpo_leaderboard=';
+            const decodedCookie = decodeURIComponent(document.cookie || '');
+            const parts = decodedCookie.split(';');
+
+            for (let i = 0; i < parts.length; i += 1) {
+                const part = parts[i].trim();
+                if (part.indexOf(cookieName) === 0) {
+                    try {
+                        const value = part.substring(cookieName.length);
+                        const parsed = JSON.parse(value);
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch (error) {
+                        console.error('Hibas leaderboard cookie:', error);
+                        return [];
+                    }
+                }
             }
+
+            return [];
+        }
+
+        function loadLeaderboard(difficulty) {
+            const allEntries = getLeaderboardFromCookie();
+            const filtered = allEntries
+                .filter((entry) => entry.difficulty === difficulty)
+                .sort((a, b) => (a.time - b.time) || (b.timestamp - a.timestamp))
+                .slice(0, 100);
+
+            displayLeaderboard(filtered);
         }
 
         function displayLeaderboard(entries) {
@@ -99,8 +119,6 @@
 
         // Load initial leaderboard on page load
         loadLeaderboard('easy');
-        // Refresh leaderboard every 30 seconds
-        setInterval(() => loadLeaderboard(currentDifficulty), 30000);
     </script>
     
 </body>

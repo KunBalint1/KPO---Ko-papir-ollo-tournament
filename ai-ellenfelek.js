@@ -3,6 +3,7 @@ const myButton2 = document.getElementById("myButton2");
 
 const egyjatekos = document.getElementById("egyjatekos");
 const tobbjatekos = document.getElementById("tobbjatekos");
+const leaderboardContainer = document.querySelector(".leaderboard-container");
 
 function fadeIn(element) {
     element.style.opacity = 0;
@@ -23,6 +24,9 @@ myButton.addEventListener("click", () => {
     myButton2.style.display = "none";
     egyjatekos.style.display = "none";
     tobbjatekos.style.display = "none";
+    if (leaderboardContainer) {
+        leaderboardContainer.style.display = "none";
+    }
 
     fadeIn(konnyu);
     fadeIn(kozepes);
