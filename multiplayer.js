@@ -10,7 +10,22 @@ function normalizeServerAddress(address) {
     value = `http://${value}`;
   }
 
-  return value.replace(/\/$/, "");
+  value = value.replace(/\/$/, "");
+
+  if (/^https?:\/\/[^/]+$/i.test(value) && !/:\d+$/.test(value.replace(/^https?:\/\//i, ""))) {
+    value += ":5000";
+  }
+
+  return value;
+}
+
+function normalizeRoomIdentifier(value) {
+  if (!value) return "";
+  let result = value.trim();
+  result = result.replace(/^https?:\/\//i, "");
+  result = result.split("/")[0];
+  result = result.split(":")[0];
+  return result;
 }
 
 function resolveServerUrl() {
@@ -87,7 +102,7 @@ function setupSocketHandlers() {
 
     const statusEl = document.getElementById("createStatus");
     if (typeof showStatus === "function" && statusEl) {
-      showStatus(statusEl, `Szoba letrehozva! Kod: ${data.room_code}`, "success");
+      showStatus(statusEl, `Szoba letrehozva! Host IP: ${data.room_code}`, "success");
     }
 
     const playerName = data?.room_data?.players?.[0]?.name || "";
@@ -136,7 +151,7 @@ function createMultiplayerRoom(playerName, gameType) {
 
 function joinMultiplayerRoom(roomCode, playerName) {
   socket.emit("join_room", {
-    room_code: roomCode,
+    room_code: normalizeRoomIdentifier(roomCode),
     player_name: playerName,
   });
 }

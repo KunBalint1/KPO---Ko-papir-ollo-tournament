@@ -45,6 +45,18 @@ def get_lan_ip():
     finally:
         test_socket.close()
 
+def normalize_room_identifier(room_code):
+    """Normalize a room identifier to a plain host IP string."""
+    if not room_code:
+        return ''
+
+    value = str(room_code).strip()
+    value = value.replace('http://', '').replace('https://', '')
+    value = value.split('/')[0]
+    if ':' in value:
+        value = value.split(':', 1)[0]
+    return value
+
 def generate_room_code():
     """Generate a unique 6-character room code"""
     while True:
@@ -73,11 +85,12 @@ def handle_create_room(data):
     player_name = data['player_name']
     game_type = data.get('game_type', '1v1')
 
-    room_code = generate_room_code()
+    room_code = get_lan_ip()
 
     rooms[room_code] = {
         'code': room_code,
         'host': player_name,
+        'host_ip': room_code,
         'type': game_type,
         'created': datetime.now().isoformat(),
         'players': [{
@@ -101,7 +114,7 @@ def handle_create_room(data):
 
 @socketio.on('join_room')
 def handle_join_room(data):
-    room_code = data['room_code'].upper()
+    room_code = normalize_room_identifier(data['room_code'])
     player_name = data['player_name']
 
     if room_code not in rooms:

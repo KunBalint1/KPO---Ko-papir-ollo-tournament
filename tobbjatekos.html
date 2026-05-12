@@ -344,7 +344,7 @@
           </select>
         </div>
         <div class="info-text">
-          A szoba létrehozása után meg fog jelenni egy kód, amit meg tud osztani
+          A szoba létrehozása után meg fog jelenni a host IP címe, amit meg tud osztani
           másokkal.
         </div>
         <div class="button-group">
@@ -377,17 +377,16 @@
           />
         </div>
         <div class="form-group">
-          <label for="roomCode">Szoba kód:</label>
+          <label for="roomCode">Host IP címe:</label>
           <input
             type="text"
             id="roomCode"
-            placeholder="pl. ABC123"
-            maxlength="6"
-            style="text-transform: uppercase"
+            placeholder="pl. 192.168.1.25"
+            maxlength="100"
           />
         </div>
         <div class="info-text">
-          Kérje meg az ellenfelét, hogy adja meg a szoba kódot.
+          Kérje meg a hostot, hogy adja meg a saját IP címét.
         </div>
         <div class="button-group">
           <button class="btn btn-confirm" onclick="joinRoom()">
@@ -452,10 +451,10 @@
 
       function joinRoom() {
         const name = document.getElementById("joinPlayerName").value.trim();
-        const code = document
+        const hostAddress = document
           .getElementById("roomCode")
           .value.trim()
-          .toUpperCase();
+          ;
         const statusEl = document.getElementById("joinStatus");
 
         if (!name) {
@@ -472,17 +471,23 @@
           return;
         }
 
-        if (!code || code.length !== 6) {
+        if (!hostAddress) {
           showStatus(
             statusEl,
-            "Kérjük, adjon meg egy érvényes szoba kódot!",
+            "Kérjük, adja meg a host IP címét!",
             "error",
           );
           return;
         }
 
+        if (window.setMultiplayerServer) {
+          window.setMultiplayerServer(hostAddress);
+        }
+
+        const roomCode = hostAddress.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+
         // Use Socket.IO instead of localStorage
-        joinMultiplayerRoom(code, name);
+        joinMultiplayerRoom(roomCode, name);
       }
 
       function startQuickMatch() {
@@ -567,11 +572,7 @@
             }
           }
 
-          showStatus(
-            status,
-            `Host LAN cim: ${info.lan_ip}:${info.port}`,
-            "success"
-          );
+          showStatus(status, `Host LAN címe: ${info.lan_ip}:${info.port}`, "success");
         } catch (error) {
           console.error("Host cim auto-detect hiba:", error);
         }
