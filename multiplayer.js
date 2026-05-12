@@ -8,15 +8,24 @@ function initSocket() {
         console.log('Socket already initialized and connected');
         return;
     }
-    
+
     if (typeof io !== 'undefined') {
-        socket = io(`${window.location.protocol}//${window.location.hostname}:5000`, {
+        let serverUrl = window.location.origin;
+
+        // If we are running locally from localhost, keep using port 5000.
+        // For a real domain, the app and Socket.IO server should be served from the same origin,
+        // or the domain should proxy /socket.io to the socket server.
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            serverUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
+        }
+
+        socket = io(serverUrl, {
             reconnection: true,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             reconnectionAttempts: Infinity
         });
-        console.log('Socket.IO initialized');
+        console.log('Socket.IO initialized', serverUrl);
     } else {
         console.error('Socket.IO not loaded');
         setTimeout(initSocket, 100);
