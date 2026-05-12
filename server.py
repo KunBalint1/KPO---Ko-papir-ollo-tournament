@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, jsonify
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit, join_room, leave_room, rooms as socketio_rooms
 import random
 import string
 from datetime import datetime
 import json
 import os
 import socket as pysocket
+from threading import Lock
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -20,6 +21,8 @@ socketio = SocketIO(
 
 # Store rooms in memory (in production, use a database)
 rooms = {}
+sessions = {}  # Store session data
+rooms_lock = Lock()  # Lock for thread-safe room operations
 LEADERBOARD_FILE = 'leaderboard.json'
 
 def load_leaderboard():
@@ -91,97 +94,131 @@ def determine_winner(choice1, choice2):
 
 @socketio.on('create_room')
 def handle_create_room(data):
-    player_name = data['player_name']
-    game_type = data.get('game_type', '1v1')
+    try:
+        player_name = data.get('player_name', '').strip()
+        game_type = data.get('game_type', '1v1')
 
-    requested_identifier = normalize_room_identifier(data.get('room_identifier', ''))
-    room_code = requested_identifier or get_lan_ip()
+        if not player_name:
+            emit('error', {'message': 'Játékos neve hiányzik'})
+            return
 
-    rooms[room_code] = {
-        'code': room_code,
-        'host': player_name,
-        'host_ip': room_code,
-        'type': game_type,
-        'created': datetime.now().isoformat(),
-        'players': [{
-            'name': player_name,
-            'isHost': True,
-            'sid': request.sid,
-            'connected': True
-        }],
-        'scores': {'player1': 0, 'player2': 0},
-        'choices': {'player1': None, 'player2': None},
-        'current_round': 1,
-        'status': 'waiting',
-        'game_history': []
-    }
+        requested_identifier = normalize_room_identifier(data.get('room_identifier', ''))
+        room_code = requested_identifier or get_lan_ip()
 
-    join_room(room_code)
-    emit('room_created', {
-        'room_code': room_code,
-        'room_data': rooms[room_code]
-    })
+        with rooms_lock:
+            # Check if room already exists
+            if room_code in rooms:
+                emit('error', {'message': f'Szoba már létezik ezzel az IP-vel: {room_code}'})
+                return
+
+            rooms[room_code] = {
+                'code': room_code,
+                'host': player_name,
+                'host_ip': room_code,
+                'type': game_type,
+                'created': datetime.now().isoformat(),
+                'players': [{
+                    'name': player_name,
+                    'isHost': True,
+                    'sid': request.sid,
+                    'connected': True
+                }],
+                'scores': {'player1': 0, 'player2': 0},
+                'choices': {'player1': None, 'player2': None},
+                'current_round': 1,
+                'status': 'waiting',
+                'game_history': []
+            }
+
+        join_room(room_code)
+        
+        print(f"✓ Szoba létrehozva: {room_code} (host: {player_name})")
+        
+        emit('room_created', {
+            'room_code': room_code,
+            'room_data': rooms[room_code]
+        })
+        
+    except Exception as e:
+        print(f"✗ Hiba szoba létrehozásakor: {e}")
+        emit('error', {'message': f'Szoba létrehozási hiba: {str(e)}'})
 
 @socketio.on('join_room')
 def handle_join_room(data):
-    room_code = normalize_room_identifier(data['room_code'])
-    player_name = data['player_name']
+    try:
+        room_code = normalize_room_identifier(data.get('room_code', ''))
+        player_name = data.get('player_name', '').strip()
 
-    if room_code not in rooms:
-        emit('error', {'message': 'Room not found'})
-        return
+        if not room_code or not player_name:
+            emit('error', {'message': 'Szoba kódja vagy játékos neve hiányzik'})
+            return
 
-    room = rooms[room_code]
+        with rooms_lock:
+            if room_code not in rooms:
+                print(f"✗ Szoba nem talált: {room_code} (elérhető: {list(rooms.keys())})")
+                emit('error', {'message': f'Szoba nem talált: {room_code}'})
+                return
 
-    # Check if player is already in the room (reconnect case)
-    existing_player_index = None
-    for i, p in enumerate(room['players']):
-        if p['name'] == player_name:
-            existing_player_index = i
-            break
-    
-    if existing_player_index is not None:
-        # Player is reconnecting, just update their SID
-        room['players'][existing_player_index]['sid'] = request.sid
-        room['players'][existing_player_index]['connected'] = True
+            room = rooms[room_code]
+
+            # Check if player is already in the room (reconnect case)
+            existing_player_index = None
+            for i, p in enumerate(room['players']):
+                if p['name'] == player_name:
+                    existing_player_index = i
+                    break
+            
+            if existing_player_index is not None:
+                # Player is reconnecting
+                room['players'][existing_player_index]['sid'] = request.sid
+                room['players'][existing_player_index]['connected'] = True
+                join_room(room_code)
+                print(f"✓ Játékos újracsatlakoztat: {player_name} -> {room_code}")
+                emit('room_joined', {
+                    'room_data': room
+                })
+                return
+
+            # New player joining
+            if len(room['players']) >= 2:
+                print(f"✗ Szoba megtelt: {room_code}")
+                emit('error', {'message': 'Szoba megtelt (max. 2 játékos)'})
+                return
+
+            # Check if another player has the same name (only for new players)
+            if any(p['name'] == player_name for p in room['players']):
+                print(f"✗ Név már foglalt: {player_name}")
+                emit('error', {'message': 'Ez a játékos név már foglalt a szobában'})
+                return
+
+            # Add player to room
+            room['players'].append({
+                'name': player_name,
+                'isHost': False,
+                'sid': request.sid,
+                'connected': True
+            })
+
+            room['status'] = 'active'
+
         join_room(room_code)
+
+        print(f"✓ Játékos csatlakoztat: {player_name} -> {room_code}")
+        
+        # Notify all players in the room
+        socketio.emit('player_joined', {
+            'player_name': player_name,
+            'room_data': room
+        }, room=room_code)
+
+        # Send room data to the joining player
         emit('room_joined', {
             'room_data': room
         })
-        return
-
-    # New player joining
-    if len(room['players']) >= 2:
-        emit('error', {'message': 'Room is full'})
-        return
-
-    # Check if another player has the same name (only for new players)
-    if any(p['name'] == player_name for p in room['players']):
-        emit('error', {'message': 'Player name already taken'})
-        return
-
-    # Add player to room
-    room['players'].append({
-        'name': player_name,
-        'isHost': False,
-        'sid': request.sid,
-        'connected': True
-    })
-
-    room['status'] = 'active'
-
-    join_room(room_code)
-
-    # Notify all players in the room
-    emit('player_joined', {
-        'player_name': player_name,
-        'room_data': room
-    }, room=room_code)
-
-    # Send room data to the joining player
-    emit('room_joined', {
-        'room_data': room
-    })
+        
+    except Exception as e:
+        print(f"✗ Hiba szobához való csatlakozáskor: {e}")
+        emit('error', {'message': f'Csatlakozási hiba: {str(e)}'})
 
 @socketio.on('make_choice')
 def handle_make_choice(data):
@@ -261,36 +298,57 @@ def handle_make_choice(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    # Find the room this player was in and mark as disconnected
-    for room_code, room in rooms.items():
-        for player in room['players']:
-            if player['sid'] == request.sid:
-                player['connected'] = False
-                emit('player_disconnected', {
-                    'player_name': player['name']
-                }, room=room_code)
-                break
+    """Handle player disconnection"""
+    try:
+        with rooms_lock:
+            for room_code, room in list(rooms.items()):
+                for player in room['players']:
+                    if player['sid'] == request.sid:
+                        player['connected'] = False
+                        print(f"✓ Játékos lecsatlakoztat: {player['name']} -> {room_code}")
+                        socketio.emit('player_disconnected', {
+                            'player_name': player['name']
+                        }, room=room_code)
+                        break
+    except Exception as e:
+        print(f"✗ Hiba lecsatlakozáskor: {e}")
 
 @socketio.on('reconnect_player')
 def handle_reconnect(data):
-    room_code = data['room_code']
-    player_name = data['player_name']
+    """Handle player reconnection"""
+    try:
+        room_code = normalize_room_identifier(data.get('room_code', ''))
+        player_name = data.get('player_name', '').strip()
 
-    if room_code in rooms:
-        room = rooms[room_code]
-        for player in room['players']:
-            if player['name'] == player_name:
-                player['sid'] = request.sid
-                player['connected'] = True
-                join_room(room_code)
-                emit('player_reconnected', {
-                    'player_name': player_name,
-                    'room_data': room
-                }, room=room_code)
-                emit('room_rejoined', {
-                    'room_data': room
-                })
-                break
+        if not room_code or not player_name:
+            emit('error', {'message': 'Szoba kódja vagy játékos neve hiányzik'})
+            return
+
+        with rooms_lock:
+            if room_code not in rooms:
+                emit('error', {'message': f'Szoba nem talált: {room_code}'})
+                return
+
+            room = rooms[room_code]
+            for player in room['players']:
+                if player['name'] == player_name:
+                    player['sid'] = request.sid
+                    player['connected'] = True
+                    join_room(room_code)
+                    print(f"✓ Játékos újracsatlakoztat: {player_name}")
+                    socketio.emit('player_reconnected', {
+                        'player_name': player_name,
+                        'room_data': room
+                    }, room=room_code)
+                    emit('room_rejoined', {
+                        'room_data': room
+                    })
+                    return
+
+            emit('error', {'message': 'Játékos nem talált a szobában'})
+    except Exception as e:
+        print(f"✗ Hiba újracsatlakozáskor: {e}")
+        emit('error', {'message': f'Újracsatlakozási hiba: {str(e)}'})
 
 @app.route('/leaderboard', methods=['GET'])
 def get_leaderboard():
@@ -340,13 +398,34 @@ def host_info():
         'suggested_url': f'http://{lan_ip}:{port}'
     })
 
+@app.route('/rooms', methods=['GET'])
+def get_rooms():
+    """Debug endpoint to see all active rooms"""
+    with rooms_lock:
+        room_list = []
+        for code, room in rooms.items():
+            room_list.append({
+                'code': room['code'],
+                'host': room['host'],
+                'players': [p['name'] for p in room['players']],
+                'status': room['status'],
+                'type': room['type']
+            })
+    return jsonify({'rooms': room_list, 'total': len(room_list)})
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5500))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     lan_ip = get_lan_ip()
     
-    print(f"Starting Socket.IO server on port {port} (debug={debug})...")
-    print(f"LAN address: http://{lan_ip}:{port}")
+    print("\n" + "="*60)
+    print("🎮 KÒ, PAPÍR, OLLÓ - MULTIPLAYER SZERVER")
+    print("="*60)
+    print(f"🚀 Socket.IO szerver indítása port {port} (debug={debug})...")
+    print(f"📍 LAN cím: http://{lan_ip}:{port}")
+    print(f"🌐 Csatlakozás böngészőből: http://{lan_ip}:{port}/tobbjatekos.html")
+    print(f"📊 Szobák megtekintése: http://{lan_ip}:{port}/rooms")
+    print("="*60 + "\n")
     
     # Production-ready Socket.IO server
     socketio.run(

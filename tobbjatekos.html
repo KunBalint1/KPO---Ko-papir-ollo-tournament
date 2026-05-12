@@ -257,6 +257,66 @@
         text-decoration: underline;
       }
 
+      .rooms-list {
+        background: #f5f5f5;
+        border-radius: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .room-item {
+        padding: 12px;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .room-item:hover {
+        background: #efefef;
+      }
+
+      .room-item:last-child {
+        border-bottom: none;
+      }
+
+      .room-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 4px;
+      }
+
+      .room-item-info {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .room-item-badge {
+        background: #667eea;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+
+      .no-rooms-message {
+        padding: 20px;
+        text-align: center;
+        color: #999;
+        font-size: 14px;
+      }
+
+      .room-loading {
+        padding: 20px;
+        text-align: center;
+        color: #667eea;
+        font-size: 14px;
+      }
+
       @media (max-width: 600px) {
         .container {
           padding: 25px 20px;
@@ -367,6 +427,17 @@
         <span class="close" onclick="closeModal('joinRoomModal')">&times;</span>
         <div class="modal-header">Csatlakozás szobához</div>
         <div id="joinStatus" class="status-message"></div>
+        
+        <div class="form-group">
+          <button class="btn btn-confirm" onclick="loadAvailableRooms()" style="width: 100%; margin-bottom: 10px;">
+            🔍 Elérhető szobák keresése
+          </button>
+        </div>
+
+        <div id="roomsListContainer" class="rooms-list" style="display: none;">
+          <!-- Rooms will be populated here -->
+        </div>
+
         <div class="form-group">
           <label for="joinPlayerName">Játékos neve:</label>
           <input
@@ -376,6 +447,7 @@
             maxlength="20"
           />
         </div>
+        
         <div class="form-group">
           <label for="roomCode">Host IP címe:</label>
           <input
@@ -385,9 +457,11 @@
             maxlength="100"
           />
         </div>
+        
         <div class="info-text">
-          Kérje meg a hostot, hogy adja meg a saját IP címét.
+          Kattints az "Elérhető szobák keresése" gombra, vagy manuálisan add meg a host IP-jét.
         </div>
+        
         <div class="button-group">
           <button class="btn btn-confirm" onclick="joinRoom()">
             Csatlakozás
@@ -453,8 +527,7 @@
         const name = document.getElementById("joinPlayerName").value.trim();
         const hostAddress = document
           .getElementById("roomCode")
-          .value.trim()
-          ;
+          .value.trim();
         const statusEl = document.getElementById("joinStatus");
 
         if (!name) {
@@ -462,32 +535,38 @@
           return;
         }
 
-        if (!window.socket || !window.socket.connected) {
+        if (!hostAddress) {
           showStatus(
             statusEl,
-            "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a domainhez tartozó Socket.IO beállítást.",
+            "Kérjük, adja meg a host IP címét!",
             "error"
           );
           return;
         }
 
-        if (!hostAddress) {
+        if (!window.socket || !window.socket.connected) {
           showStatus(
             statusEl,
-            "Kérjük, adja meg a host IP címét!",
-            "error",
+            "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a hálózati beállításokat.",
+            "error"
           );
           return;
         }
 
+        // Szerver címet beállítunk, hogy ugyanarra a szerverhez csatlakozhassunk
         if (window.setMultiplayerServer) {
           window.setMultiplayerServer(hostAddress);
         }
 
+        // A szoba kódja a normalizált IP cím
         const roomCode = hostAddress.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
 
-        // Use Socket.IO instead of localStorage
-        joinMultiplayerRoom(roomCode, name);
+        console.log("Szobához csatlakozás kezdése:", { roomCode, playerName: name });
+        
+        showStatus(statusEl, "Csatlakozás a szobához...", "success");
+        
+        // Socket.IO event küldése
+        window.joinMultiplayerRoom(roomCode, name);
       }
 
       function startQuickMatch() {
@@ -547,6 +626,66 @@
         setTimeout(() => {
           window.location.reload();
         }, 500);
+      }
+
+      async function loadAvailableRooms() {
+        const container = document.getElementById("roomsListContainer");
+        const statusEl = document.getElementById("joinStatus");
+        
+        if (!window.getAvailableRooms) {
+          showStatus(statusEl, "Szobák lekérésé nem elérhető!", "error");
+          return;
+        }
+
+        // Show loading
+        container.style.display = "block";
+        container.innerHTML = '<div class="room-loading">⏳ Szobák keresése...</div>';
+
+        try {
+          const rooms = await window.getAvailableRooms();
+          
+          if (!rooms || rooms.length === 0) {
+            container.innerHTML = '<div class="no-rooms-message">📭 Nincsenek elérhető szobák</div>';
+            return;
+          }
+
+          // Build rooms list
+          let html = '';
+          rooms.forEach(room => {
+            const playerCount = room.players ? room.players.length : 0;
+            const slots = `${playerCount}/2`;
+            
+            html += `
+              <div class="room-item" onclick="selectRoomFromList('${room.code}', '${room.host}')">
+                <div class="room-item-header">
+                  <span>🏠 ${room.host} (${room.type})</span>
+                  <span class="room-item-badge">${slots}</span>
+                </div>
+                <div class="room-item-info">
+                  IP: ${room.code}
+                </div>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html;
+        } catch (error) {
+          console.error("Hiba szobák lekérésekor:", error);
+          showStatus(statusEl, "Hiba a szobák lekérésekor!", "error");
+          container.style.display = "none";
+        }
+      }
+
+      function selectRoomFromList(roomCode, hostName) {
+        // Fill in the room code field
+        document.getElementById("roomCode").value = roomCode;
+        
+        // Show selected room info
+        const statusEl = document.getElementById("joinStatus");
+        showStatus(statusEl, `Kiválasztva: ${hostName} (${roomCode})`, "success");
+        
+        // Optionally focus on player name field
+        document.getElementById("joinPlayerName").focus();
       }
 
       async function autoDetectHostAddress() {
