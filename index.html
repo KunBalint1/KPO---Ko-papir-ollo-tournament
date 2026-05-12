@@ -28,8 +28,80 @@
         </div>
     </div>
     
+    <div class="leaderboard-container">
+        <div class="leaderboard-section">
+            <h2>🏆 Leaderboard</h2>
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab-btn active" data-difficulty="easy">Könnyű</button>
+                <button class="leaderboard-tab-btn" data-difficulty="medium">Közepes</button>
+                <button class="leaderboard-tab-btn" data-difficulty="hard">Nehéz</button>
+            </div>
+            <div id="leaderboard-list" class="leaderboard-list"></div>
+        </div>
+    </div>
+    
     <script src="fadein.js"></script>
     <script src="ai-ellenfelek.js"></script>
+    <script>
+        // Leaderboard functionality
+        let currentDifficulty = 'easy';
+
+        async function loadLeaderboard(difficulty) {
+            try {
+                const response = await fetch(`/leaderboard?difficulty=${difficulty}`);
+                const data = await response.json();
+                displayLeaderboard(data);
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboard-list').innerHTML = 
+                    '<p style="color: #666; text-align: center;">Hiba a leaderboard betöltésekor</p>';
+            }
+        }
+
+        function displayLeaderboard(entries) {
+            const listEl = document.getElementById('leaderboard-list');
+            
+            if (!entries || entries.length === 0) {
+                listEl.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Nincsenek bejegyzések</p>';
+                return;
+            }
+
+            let html = '<div class="leaderboard-entries">';
+            entries.forEach((entry, index) => {
+                const minutes = Math.floor(entry.time / 60);
+                const seconds = entry.time % 60;
+                const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                
+                html += `
+                    <div class="leaderboard-entry">
+                        <span class="entry-position">${medal}</span>
+                        <span class="entry-name">${entry.player_name}</span>
+                        <span class="entry-time">${timeStr}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            listEl.innerHTML = html;
+        }
+
+        // Tab buttons functionality
+        document.querySelectorAll('.leaderboard-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.leaderboard-tab-btn').forEach(b => 
+                    b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.difficulty;
+                loadLeaderboard(currentDifficulty);
+            });
+        });
+
+        // Load initial leaderboard on page load
+        loadLeaderboard('easy');
+        // Refresh leaderboard every 30 seconds
+        setInterval(() => loadLeaderboard(currentDifficulty), 30000);
+    </script>
     
 </body>
 </html>

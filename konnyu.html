@@ -16,6 +16,18 @@
     <div class="game-over-message">Vesztettél!</div>
     <button id="new-game-button">Új játék</button>
   </div>
+  <div class="leaderboard-modal hidden" id="leaderboard-modal">
+    <div class="leaderboard-content">
+      <h2>Gratulálok!</h2>
+      <div class="final-time-display">
+        <p>Idő:</p>
+        <p id="final-time" style="font-size: 36px; font-weight: bold; color: #667eea;">0:00</p>
+      </div>
+      <input type="text" id="player-name-input" placeholder="Add meg a nevedet" maxlength="30" />
+      <button class="leaderboard-btn" onclick="saveScoreToLeaderboard()">Leaderboard-ra mentés</button>
+      <button class="leaderboard-btn cancel" onclick="closeLeaderboardModal(); window.location.reload();">Kihagyás</button>
+    </div>
+  </div>
   <div class="game-page hidden">
     <header class="game-header">
       <div class="status-card player-card">

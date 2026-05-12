@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import random
 import string
 from datetime import datetime
+import json
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -19,6 +21,22 @@ socketio = SocketIO(
 
 # Store rooms in memory (in production, use a database)
 rooms = {}
+LEADERBOARD_FILE = 'leaderboard.json'
+
+def load_leaderboard():
+    """Load leaderboard from JSON file"""
+    if os.path.exists(LEADERBOARD_FILE):
+        try:
+            with open(LEADERBOARD_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_leaderboard(leaderboard):
+    """Save leaderboard to JSON file"""
+    with open(LEADERBOARD_FILE, 'w') as f:
+        json.dump(leaderboard, f, indent=2)
 
 def generate_room_code():
     """Generate a unique 6-character room code"""
@@ -244,5 +262,55 @@ def handle_reconnect(data):
                 })
                 break
 
+@app.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    """Get all leaderboard entries sorted by time"""
+    difficulty = request.args.get('difficulty', None)
+    leaderboard = load_leaderboard()
+    
+    if difficulty:
+        leaderboard = [entry for entry in leaderboard if entry.get('difficulty') == difficulty]
+    
+    # Sort by time (ascending) and then by date (descending)
+    leaderboard.sort(key=lambda x: (x.get('time', float('inf')), -x.get('timestamp', 0)))
+    
+    return jsonify(leaderboard[:100])  # Return top 100
+
+@app.route('/save-score', methods=['POST'])
+def save_score():
+    """Save a new score to the leaderboard"""
+    data = request.json
+    
+    if not all(key in data for key in ['player_name', 'time', 'difficulty']):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    leaderboard = load_leaderboard()
+    
+    new_entry = {
+        'player_name': data['player_name'],
+        'time': data['time'],  # in seconds
+        'difficulty': data['difficulty'],
+        'timestamp': int(datetime.now().timestamp())
+    }
+    
+    leaderboard.append(new_entry)
+    save_leaderboard(leaderboard)
+    
+    return jsonify({'success': True, 'entry': new_entry}), 201
+
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
+    
+    print(f"Starting Socket.IO server on port {port} (debug={debug})...")
+    
+    # Production-ready Socket.IO server
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=port,
+        debug=debug,
+        use_reloader=False,  # Disable reloader in production
+        log_output=True
+    )

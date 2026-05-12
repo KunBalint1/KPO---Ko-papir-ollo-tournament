@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let round = 1;
   let gameOver = false;
   let chestOpen = false;
+  let gameStartTime = Date.now();  // Track game start time for leaderboard
 
   const playerHotbar = [null, null, null];
   const robotHotbar = [null, null, null];
@@ -50,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const moveButtons = document.querySelectorAll(".move-button");
 
   newGameButton.addEventListener("click", () => {
+    closeLeaderboardModal();
     window.location.reload();
   });
 
@@ -105,7 +107,78 @@ document.addEventListener("DOMContentLoaded", () => {
       gamePage.classList.remove("fade-out", "visible");
       gameOverOverlay.classList.remove("hidden");
       gameOverOverlay.classList.add("visible");
+      
+      // Show the leaderboard modal after a short delay
+      setTimeout(() => {
+        showLeaderboardModal();
+      }, 800);
     }, 500);
+  }
+
+  function showLeaderboardModal() {
+    const elapsedTime = Math.round((Date.now() - gameStartTime) / 1000);
+    const playerWon = robotLife <= 0;
+    
+    // If player lost, don't show the modal
+    if (!playerWon) return;
+    
+    const modal = document.getElementById('leaderboard-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('visible');
+    
+    const timeDisplay = document.getElementById('final-time');
+    if (timeDisplay) {
+      const minutes = Math.floor(elapsedTime / 60);
+      const seconds = elapsedTime % 60;
+      timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    const playerNameInput = document.getElementById('player-name-input');
+    if (playerNameInput) {
+      playerNameInput.value = '';
+      playerNameInput.focus();
+    }
+  }
+
+  function saveScoreToLeaderboard() {
+    const elapsedTime = Math.round((Date.now() - gameStartTime) / 1000);
+    const playerNameInput = document.getElementById('player-name-input');
+    const playerName = (playerNameInput?.value || 'Ismeretlen').trim();
+    
+    if (!playerName || playerName.length === 0) {
+      alert('Kérjük add meg a nevedet!');
+      return;
+    }
+    
+    // Save to leaderboard
+    fetch('/save-score', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        player_name: playerName,
+        time: elapsedTime,
+        difficulty: difficulty
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        closeLeaderboardModal();
+      }
+    })
+    .catch(error => console.error('Error saving score:', error));
+  }
+
+  function closeLeaderboardModal() {
+    const modal = document.getElementById('leaderboard-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('visible');
+    }
   }
 
   function playRound(playerMove) {
@@ -184,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
       gameOver = true;
       updateBattleMessage("Nyertél! A robot legyőzve.");
       setButtonsEnabled(false);
+      showGameOver();
       return true;
     }
     return false;
