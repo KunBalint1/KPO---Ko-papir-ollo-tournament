@@ -424,7 +424,15 @@
           return;
         }
 
-        // Use Socket.IO instead of localStorage
+        if (!window.socket || !window.socket.connected) {
+          showStatus(
+            statusEl,
+            "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a domainhez tartozó Socket.IO beállítást.",
+            "error"
+          );
+          return;
+        }
+
         createMultiplayerRoom(name, type);
       }
 
@@ -438,6 +446,15 @@
 
         if (!name) {
           showStatus(statusEl, "Kérjük, adja meg a nevét!", "error");
+          return;
+        }
+
+        if (!window.socket || !window.socket.connected) {
+          showStatus(
+            statusEl,
+            "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a domainhez tartozó Socket.IO beállítást.",
+            "error"
+          );
           return;
         }
 
