@@ -13,7 +13,7 @@ function normalizeServerAddress(address) {
   value = value.replace(/\/$/, "");
 
   if (/^https?:\/\/[^/]+$/i.test(value) && !/:\d+$/.test(value.replace(/^https?:\/\//i, ""))) {
-    value += ":5000";
+    value += ":5500";
   }
 
   return value;
@@ -50,7 +50,7 @@ function resolveServerUrl() {
     return window.location.origin;
   }
 
-  return "http://localhost:5000";
+  return "http://localhost:5500";
 }
 
 function getCurrentMultiplayerServer() {

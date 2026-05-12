@@ -329,7 +329,7 @@ def save_score():
 def host_info():
     """Return host LAN info for easier multiplayer setup on local network."""
     lan_ip = get_lan_ip()
-    port = request.host.split(':')[-1] if ':' in request.host else str(os.environ.get('PORT', 5000))
+    port = request.host.split(':')[-1] if ':' in request.host else str(os.environ.get('PORT', 5500))
 
     return jsonify({
         'lan_ip': lan_ip,
@@ -338,7 +338,7 @@ def host_info():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5500))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     lan_ip = get_lan_ip()
     

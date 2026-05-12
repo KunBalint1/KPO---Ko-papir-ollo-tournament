@@ -6,7 +6,7 @@ echo "Ensuring dependencies are installed..."
 pip3 install -r requirements.txt --upgrade
 
 # Get port from argument or use default
-PORT=${1:-5000}
+PORT=${1:-5500}
 DEBUG=${2:-False}
 
 echo "Starting KPO Tournament Server in production mode..."
