@@ -124,11 +124,25 @@
             margin-bottom: 10px;
         }
 
-        .player-score {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
+        .player-life-bar {
+            background: #e0e0e0;
+            height: 25px;
+            border-radius: 8px;
             margin: 10px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .player-life-fill {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            height: 100%;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
         }
 
         .player-choice {
@@ -138,6 +152,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .player-items {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .item-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 18px;
+            background: #fff;
+            border: 2px solid #ddd;
+        }
+
+        .item-icon.usable {
+            cursor: pointer;
+            border-color: #9bb1ff;
+        }
+
+        .item-icon.usable:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.25);
         }
 
         .choices-section {
@@ -303,6 +347,132 @@
             display: block;
         }
 
+        .chest-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 16px;
+        }
+
+        .chest-overlay.show {
+            display: flex;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .chest-panel {
+            width: min(520px, 100%);
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+
+        .chest-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .chest-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .chest-card {
+            background: #f8f9ff;
+            border: 2px solid #e4e8ff;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .chest-player-name {
+            color: #444;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .chest-item-emoji {
+            font-size: 46px;
+            line-height: 1;
+            margin-bottom: 6px;
+            animation: popIn 0.35s ease-out;
+        }
+
+        .chest-item-text {
+            color: #555;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .final-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(16, 18, 30, 0.88);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1300;
+            padding: 16px;
+        }
+
+        .final-overlay.show {
+            display: flex;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .final-content {
+            background: #ffffff;
+            border-radius: 20px;
+            width: min(560px, 100%);
+            padding: 26px;
+            text-align: center;
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+        }
+
+        .final-title {
+            font-size: 42px;
+            font-weight: 800;
+            color: #2d3b8f;
+            line-height: 1.1;
+            margin-bottom: 10px;
+        }
+
+        .final-subtitle {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 16px;
+            white-space: pre-line;
+        }
+
+        .final-button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+
         @media (max-width: 600px) {
             .game-container {
                 padding: 20px;
@@ -360,23 +530,33 @@
         <div class="players-section" id="playersSection" style="display: none;">
             <div class="player-card" id="player1Card">
                 <div class="player-name" id="player1Name">Játékos 1</div>
-                <div class="player-score" id="player1Score">0</div>
+                <div class="player-life-bar">
+                    <div class="player-life-fill" id="player1LifeFill" style="width: 100%;">
+                        <span id="player1LifeText">3/3</span>
+                    </div>
+                </div>
                 <div class="player-choice" id="player1Choice"></div>
+                <div class="player-items" id="player1Items"></div>
             </div>
 
             <div class="player-card" id="player2Card">
                 <div class="player-name" id="player2Name">Várakozás...</div>
-                <div class="player-score" id="player2Score">0</div>
+                <div class="player-life-bar">
+                    <div class="player-life-fill" id="player2LifeFill" style="width: 100%;">
+                        <span id="player2LifeText">3/3</span>
+                    </div>
+                </div>
                 <div class="player-choice" id="player2Choice"></div>
+                <div class="player-items" id="player2Items"></div>
             </div>
         </div>
 
         <div class="choices-section" id="choicesSection" style="display: none;">
             <div class="choices-title">Válassza ki a lépését:</div>
             <div class="choices-grid">
-                <button class="choice-btn" onclick="selectChoice('kő')">🪨</button>
-                <button class="choice-btn" onclick="selectChoice('papír')">📄</button>
-                <button class="choice-btn" onclick="selectChoice('olló')">✂️</button>
+                <button class="choice-btn" onclick="selectChoice('kő', this)">🪨</button>
+                <button class="choice-btn" onclick="selectChoice('papír', this)">📄</button>
+                <button class="choice-btn" onclick="selectChoice('olló', this)">✂️</button>
             </div>
         </div>
 
@@ -393,6 +573,30 @@
     </div>
 
     <div class="notification" id="notification"></div>
+    <div class="chest-overlay" id="chestOverlay">
+        <div class="chest-panel">
+            <div class="chest-title">🎁 Kör végi jutalmak</div>
+            <div class="chest-grid">
+                <div class="chest-card">
+                    <div class="chest-player-name" id="chestPlayer1Name">Játékos 1</div>
+                    <div class="chest-item-emoji" id="chestPlayer1Emoji">👆</div>
+                    <div class="chest-item-text" id="chestPlayer1Text">Semmi</div>
+                </div>
+                <div class="chest-card">
+                    <div class="chest-player-name" id="chestPlayer2Name">Játékos 2</div>
+                    <div class="chest-item-emoji" id="chestPlayer2Emoji">👆</div>
+                    <div class="chest-item-text" id="chestPlayer2Text">Semmi</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="final-overlay" id="finalOverlay">
+        <div class="final-content">
+            <div class="final-title" id="finalTitle">JÁTÉK VÉGE</div>
+            <div class="final-subtitle" id="finalSubtitle">-</div>
+            <button class="final-button" onclick="closeFinalOverlayAndLeave()">Vissza a lobbyba</button>
+        </div>
+    </div>
 
     <script src="socket.io.min.js"></script>
     <script src="multiplayer.js"></script>
@@ -403,12 +607,20 @@
             isHost: false,
             players: [],
             currentRound: 1,
-            maxRounds: 1,
-            scores: { player1: 0, player2: 0 },
+            maxRounds: 3,
+            lives: { player1: 3, player2: 3 },
+            items: { player1: [], player2: [] },
+            buffs: { player1: false, player2: false },
             choices: { player1: null, player2: null },
             gameStarted: false,
             roomData: null,
             initialized: false
+        };
+
+        const itemMeta = {
+            reg: { emoji: '💚', label: 'Gyógyító (+1 élet)' },
+            ero: { emoji: '💪', label: 'Erő (következő ütés erősebb)' },
+            finger: { emoji: '👆', label: 'Semmi' }
         };
 
         // Socket event handlers - set up once
@@ -417,6 +629,7 @@
             socket.off('player_joined');
             socket.off('choice_made');
             socket.off('round_result');
+            socket.off('item_used');
             socket.off('player_disconnected');
             socket.off('player_reconnected');
             socket.off('error');
@@ -446,12 +659,24 @@
             socket.on('round_result', (data) => {
                 console.log('Round result:', data);
                 gameState.roomData = data.room_data;
-                gameState.scores = data.scores;
-                gameState.choices = data.choices;
+                gameState.lives = data.lives;
+                gameState.items = data.items;
+                gameState.buffs = data.buffs;
+                gameState.choices = data.round_choices || data.choices || { player1: null, player2: null };
                 gameState.currentRound = data.current_round;
 
+                showChestReveal(data.round_items || {}, () => {
+                    updateUI();
+                    showRoundResult(data.winner, data.damage, data.round_completed, data.game_over, data.game_winner, data.scores);
+                    document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
+                });
+            });
+
+            socket.on('item_used', (data) => {
+                gameState.roomData = data.room_data;
+                updateGameState();
                 updateUI();
-                showRoundResult(data.winner, data.game_over);
+                showNotification(`${data.player_name} használta: ${itemMeta[data.item_id]?.label || data.item_id}`);
             });
 
             socket.on('player_disconnected', (data) => {
@@ -526,20 +751,14 @@
         function updateGameState() {
             if (!gameState.roomData) return;
 
-            gameState.players = gameState.roomData.players;
-            gameState.scores = gameState.roomData.scores;
-            gameState.choices = gameState.roomData.choices;
+            gameState.players = gameState.roomData.players || [];
+            gameState.lives = gameState.roomData.lives || { player1: 3, player2: 3 };
+            gameState.items = gameState.roomData.items || { player1: [], player2: [] };
+            gameState.buffs = gameState.roomData.buffs || { player1: false, player2: false };
+            gameState.choices = gameState.roomData.choices || { player1: null, player2: null };
             gameState.currentRound = gameState.roomData.current_round;
             gameState.isHost = gameState.roomData.host === gameState.playerName;
-
-            // Determine max rounds
-            if (gameState.roomData.type === 'best_of_3') {
-                gameState.maxRounds = 3;
-            } else if (gameState.roomData.type === 'best_of_5') {
-                gameState.maxRounds = 5;
-            } else {
-                gameState.maxRounds = 1;
-            }
+            gameState.maxRounds = gameState.roomData.max_rounds || 3;
 
             gameState.gameStarted = gameState.players.length === 2;
         }
@@ -550,21 +769,24 @@
 
             if (gameState.players.length >= 1) {
                 document.getElementById('player1Name').textContent = gameState.players[0].name;
-                document.getElementById('player1Score').textContent = gameState.scores.player1;
             }
 
             if (gameState.players.length >= 2) {
                 document.getElementById('player2Name').textContent = gameState.players[1].name;
-                document.getElementById('player2Score').textContent = gameState.scores.player2;
-                document.getElementById('statusTitle').textContent = `Kör ${gameState.currentRound}`;
+                document.getElementById('statusTitle').textContent = `Kör ${gameState.currentRound}/${gameState.maxRounds}`;
                 document.getElementById('statusMessage').textContent = 'Tegyen lépést!';
             } else {
                 document.getElementById('statusTitle').textContent = '⏳ Várakozás';
                 document.getElementById('statusMessage').textContent = `Szobakód: ${gameState.roomCode}`;
+                document.getElementById('player1Choice').textContent = '';
+                document.getElementById('player2Choice').textContent = '';
+                return;
             }
 
             updatePlayerCards();
             updateChoicesDisplay();
+            updateLifeDisplay();
+            updateItemsDisplay();
         }
 
         function updatePlayerCards() {
@@ -580,16 +802,105 @@
             }
         }
 
+        function updateLifeDisplay() {
+            const maxLife = 3;
+            const life1 = gameState.lives?.player1 ?? 3;
+            const life2 = gameState.lives?.player2 ?? 3;
+            const lifePercent1 = (life1 / maxLife) * 100;
+            const lifePercent2 = (life2 / maxLife) * 100;
+
+            document.getElementById('player1LifeFill').style.width = lifePercent1 + '%';
+            document.getElementById('player1LifeText').textContent = `${life1}/${maxLife}`;
+
+            document.getElementById('player2LifeFill').style.width = lifePercent2 + '%';
+            document.getElementById('player2LifeText').textContent = `${life2}/${maxLife}`;
+        }
+
+        function updateItemsDisplay() {
+            const items1 = Array.isArray(gameState.items?.player1) ? gameState.items.player1 : [];
+            const items2 = Array.isArray(gameState.items?.player2) ? gameState.items.player2 : [];
+            const isPlayer1 = gameState.playerName === gameState.players[0]?.name;
+            const isPlayer2 = gameState.playerName === gameState.players[1]?.name;
+
+            // Player 1 items
+            const player1ItemsHTML = items1.map((item, idx) => 
+                `<button class="item-icon ${isPlayer1 ? 'usable' : ''}" ${isPlayer1 ? `onclick="useMultiplayerItem('player1', ${idx})"` : ''} title="${itemMeta[item]?.label || item}">${itemMeta[item]?.emoji || item}</button>`
+            ).join('');
+            document.getElementById('player1Items').innerHTML = player1ItemsHTML;
+
+            // Player 2 items
+            const player2ItemsHTML = items2.map((item, idx) => 
+                `<button class="item-icon ${isPlayer2 ? 'usable' : ''}" ${isPlayer2 ? `onclick="useMultiplayerItem('player2', ${idx})"` : ''} title="${itemMeta[item]?.label || item}">${itemMeta[item]?.emoji || item}</button>`
+            ).join('');
+            document.getElementById('player2Items').innerHTML = player2ItemsHTML;
+        }
+
+        function useMultiplayerItem(playerKey, index) {
+            const playerIndex = gameState.playerName === gameState.players[0]?.name ? 'player1' : 'player2';
+            if (playerKey !== playerIndex) return;
+
+            const list = Array.isArray(gameState.items[playerKey]) ? gameState.items[playerKey] : [];
+            const itemId = list[index];
+            if (!itemId) return;
+
+            if (itemId === 'reg' && gameState.lives[playerKey] >= 3) {
+                showNotification('Teljes életnél nem tudod használni a gyógyítót.');
+                return;
+            }
+
+            socket.emit('use_item', {
+                room_code: gameState.roomCode,
+                player_name: gameState.playerName,
+                item_id: itemId
+            });
+        }
+
+        function showChestReveal(roundItems, done) {
+            const overlay = document.getElementById('chestOverlay');
+            if (!overlay) {
+                done();
+                return;
+            }
+
+            const p1Name = gameState.players[0]?.name || 'Játékos 1';
+            const p2Name = gameState.players[1]?.name || 'Játékos 2';
+            const p1Item = roundItems.player1 || 'finger';
+            const p2Item = roundItems.player2 || 'finger';
+
+            document.getElementById('chestPlayer1Name').textContent = p1Name;
+            document.getElementById('chestPlayer2Name').textContent = p2Name;
+            document.getElementById('chestPlayer1Emoji').textContent = itemMeta[p1Item]?.emoji || '👆';
+            document.getElementById('chestPlayer2Emoji').textContent = itemMeta[p2Item]?.emoji || '👆';
+            document.getElementById('chestPlayer1Text').textContent = itemMeta[p1Item]?.label || 'Semmi';
+            document.getElementById('chestPlayer2Text').textContent = itemMeta[p2Item]?.label || 'Semmi';
+
+            overlay.classList.add('show');
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                done();
+            }, 1700);
+        }
+
         function updateChoicesDisplay() {
             const emoji = { 'kő': '🪨', 'papír': '📄', 'olló': '✂️' };
 
-            document.getElementById('player1Choice').textContent =
-                gameState.choices.player1 ? emoji[gameState.choices.player1] : '';
-            document.getElementById('player2Choice').textContent =
-                gameState.choices.player2 ? emoji[gameState.choices.player2] : '';
+            // Az aktuális játékos választása látható, az ellenfél rejtve
+            if (gameState.playerName === gameState.players[0]?.name) {
+                document.getElementById('player1Choice').textContent =
+                    gameState.choices.player1 ? emoji[gameState.choices.player1] : '';
+                // Az ellenfél választása rejtve (csak ha van választás)
+                document.getElementById('player2Choice').textContent =
+                    gameState.choices.player2 ? '❓' : '';
+            } else if (gameState.playerName === gameState.players[1]?.name) {
+                // Az ellenfél választása rejtve (csak ha van választás)
+                document.getElementById('player1Choice').textContent =
+                    gameState.choices.player1 ? '❓' : '';
+                document.getElementById('player2Choice').textContent =
+                    gameState.choices.player2 ? emoji[gameState.choices.player2] : '';
+            }
         }
 
-        function selectChoice(choice) {
+        function selectChoice(choice, buttonEl) {
             if (!gameState.gameStarted || gameState.players.length < 2) return;
 
             // Remove previous selection
@@ -598,46 +909,94 @@
             });
 
             // Add selection to clicked button
-            event.target.closest('.choice-btn').classList.add('selected');
+            if (buttonEl) {
+                buttonEl.classList.add('selected');
+            }
 
             // Send choice to server
             makeChoice(gameState.roomCode, gameState.playerName, choice);
         }
 
-        function showRoundResult(winner, gameOver) {
+        function showRoundResult(winner, damage, roundCompleted, gameOver, gameWinner, scores) {
+            const emoji = { 'kő': '🪨', 'papír': '📄', 'olló': '✂️' };
+
+            // Az eredmény után már mindkét választás látható
+            document.getElementById('player1Choice').textContent =
+                gameState.choices.player1 ? emoji[gameState.choices.player1] : '';
+            document.getElementById('player2Choice').textContent =
+                gameState.choices.player2 ? emoji[gameState.choices.player2] : '';
+
             let result = '';
             if (winner === 'draw') {
                 result = `🤝 Döntetlen!`;
             } else if (winner === 'player1') {
-                result = `🎉 ${gameState.players[0].name} nyert!`;
+                result = `🎉 ${gameState.players[0].name} nyert, ${damage || 1} sebzést adott!`;
             } else if (winner === 'player2') {
-                result = `🎉 ${gameState.players[1].name} nyert!`;
+                result = `🎉 ${gameState.players[1].name} nyert, ${damage || 1} sebzést adott!`;
+            }
+
+            if (roundCompleted) {
+                result += ' KO! Új kör indul.';
             }
 
             document.getElementById('resultText').textContent = result;
-            document.getElementById('roundText').textContent = `${gameState.currentRound}. kör vége`;
+            const finishedRound = roundCompleted ? (gameState.currentRound - (gameOver ? 0 : 1)) : gameState.currentRound;
+            const score1 = scores?.player1 ?? gameState.roomData?.scores?.player1 ?? 0;
+            const score2 = scores?.player2 ?? gameState.roomData?.scores?.player2 ?? 0;
+            document.getElementById('roundText').textContent = `${finishedRound}. kör vége • Állás: ${score1}-${score2}`;
             document.getElementById('resultSection').classList.add('show');
 
             if (gameOver) {
+                let finalMessage = '';
+                if (gameWinner === 'player1') {
+                    finalMessage = `${gameState.players[0].name} NYERT\n${gameState.players[1].name} VESZTETT`;
+                } else if (gameWinner === 'player2') {
+                    finalMessage = `${gameState.players[1].name} NYERT\n${gameState.players[0].name} VESZTETT`;
+                } else {
+                    finalMessage = `DÖNTETLEN`;
+                }
+
+                showFinalOverlay(finalMessage);
                 document.querySelector('.next-round-btn').textContent = 'Játék vége';
-                document.querySelector('.next-round-btn').onclick = endGame;
+                document.querySelector('.next-round-btn').onclick = () => {};
             }
         }
 
         function nextRound() {
-            document.getElementById('resultSection').classList.remove('show');
+            hideRoundResult();
             document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('selected'));
+            // Az új kör kezdetén rejtve maradnak a választások
+            updateChoicesDisplay();
             updateUI();
         }
 
-        function endGame() {
-            const winner = gameState.scores.player1 > gameState.scores.player2
-                ? gameState.players[0].name
-                : gameState.scores.player2 > gameState.scores.player1
-                ? gameState.players[1].name
-                : 'Döntetlen';
+        function hideRoundResult() {
+            document.getElementById('resultSection').classList.remove('show');
+            document.querySelector('.next-round-btn').textContent = 'Következő kör';
+            document.querySelector('.next-round-btn').onclick = nextRound;
+        }
 
-            alert(`🏆 Játék vége!\n\n${gameState.players[0].name}: ${gameState.scores.player1}\n${gameState.players[1].name}: ${gameState.scores.player2}\n\nNyertes: ${winner}`);
+        function endGame(finalMessage) {
+            if (finalMessage) {
+                alert(finalMessage);
+            }
+            leaveGame();
+        }
+
+        function showFinalOverlay(message) {
+            const overlay = document.getElementById('finalOverlay');
+            const title = document.getElementById('finalTitle');
+            const subtitle = document.getElementById('finalSubtitle');
+            if (!overlay || !title || !subtitle) return;
+
+            title.textContent = 'JÁTÉK VÉGE';
+            subtitle.textContent = message;
+            overlay.classList.add('show');
+        }
+
+        function closeFinalOverlayAndLeave() {
+            const overlay = document.getElementById('finalOverlay');
+            if (overlay) overlay.classList.remove('show');
             leaveGame();
         }
 

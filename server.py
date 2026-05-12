@@ -95,6 +95,31 @@ def determine_winner(choice1, choice2):
     else:
         return 'player2'
 
+def get_random_item():
+    """Get a random item from chest (rare drops)."""
+    import random as rand
+    chance = rand.random()
+    if chance < 0.08:
+        return 'reg'  # Heal +1
+    elif chance < 0.16:
+        return 'ero'  # Strength buff
+    else:
+        return 'finger'  # Nothing
+
+def apply_damage(room, loser_index, damage):
+    """Apply damage to a player"""
+    if loser_index == 0:
+        room['lives']['player1'] = max(0, room['lives']['player1'] - damage)
+    else:
+        room['lives']['player2'] = max(0, room['lives']['player2'] - damage)
+
+def apply_item_effect(room, player_key, item_id):
+    """Apply single-player item effects in multiplayer too."""
+    if item_id == 'reg':
+        room['lives'][player_key] = min(3, room['lives'][player_key] + 1)
+    elif item_id == 'ero':
+        room['buffs'][player_key] = True
+
 @socketio.on('create_room')
 def handle_create_room(data):
     try:
@@ -122,8 +147,12 @@ def handle_create_room(data):
                     'connected': True
                 }],
                 'scores': {'player1': 0, 'player2': 0},
+                'lives': {'player1': 3, 'player2': 3},  # Lives for each player
                 'choices': {'player1': None, 'player2': None},
+                'items': {'player1': [], 'player2': []},  # Inventory for items
+                'buffs': {'player1': False, 'player2': False},  # Strength buff status
                 'current_round': 1,
+                'max_rounds': 3,  # Max 3 rounds
                 'status': 'waiting',
                 'game_history': []
             }
@@ -246,45 +275,114 @@ def handle_make_choice(data):
 
     # Check if both players have made choices
     if room['choices']['player1'] and room['choices']['player2']:
+        round_choices = room['choices'].copy()
+
         # Determine winner
-        winner = determine_winner(room['choices']['player1'], room['choices']['player2'])
-
-        # Update scores
+        winner = determine_winner(round_choices['player1'], round_choices['player2'])
+        
+        # Calculate damage
+        damage = 1
+        loser_index = None
+        
         if winner == 'player1':
-            room['scores']['player1'] += 1
+            damage = 2 if room['buffs']['player1'] else 1
+            loser_index = 1
+            room['buffs']['player1'] = False  # Clear buff after use
         elif winner == 'player2':
-            room['scores']['player2'] += 1
+            damage = 2 if room['buffs']['player2'] else 1
+            loser_index = 0
+            room['buffs']['player2'] = False  # Clear buff after use
+        
+        # Apply damage
+        if loser_index is not None:
+            apply_damage(room, loser_index, damage)
 
-        # Add to game history
+        # Buff is consumed on winning hit (same as singleplayer)
+        if winner == 'player1':
+            room['buffs']['player1'] = False
+        elif winner == 'player2':
+            room['buffs']['player2'] = False
+        
+        # Give random items to both players (rare; no auto-use)
+        item1 = get_random_item()
+        item2 = get_random_item()
+
+        if item1 != 'finger':
+            room['items']['player1'].append(item1)
+        if item2 != 'finger':
+            room['items']['player2'].append(item2)
+
+        room['items']['player1'] = room['items']['player1'][-3:]
+        room['items']['player2'] = room['items']['player2'][-3:]
+
         room['game_history'].append({
             'round': room['current_round'],
-            'choices': room['choices'].copy(),
-            'winner': winner
+            'choices': round_choices,
+            'winner': winner,
+            'damage': damage if loser_index is not None else 0,
+            'items': {'player1': item1, 'player2': item2},
+            'lives': room['lives'].copy()
         })
+        
+        # Round progresses only if someone is KO
+        round_completed = False
+        round_winner = None
 
-        # Reset choices for next round
-        room['choices'] = {'player1': None, 'player2': None}
-        room['current_round'] += 1
+        if room['lives']['player1'] <= 0:
+            round_completed = True
+            round_winner = 'player2'
+            room['scores']['player2'] += 1
+        elif room['lives']['player2'] <= 0:
+            round_completed = True
+            round_winner = 'player1'
+            room['scores']['player1'] += 1
 
-        # Check if game is over (for best of series)
+        # Game over: first to 2 round wins OR 3 completed rounds
         game_over = False
-        if room['type'] == 'best_of_3':
-            if room['scores']['player1'] == 2 or room['scores']['player2'] == 2:
-                game_over = True
-        elif room['type'] == 'best_of_5':
-            if room['scores']['player1'] == 3 or room['scores']['player2'] == 3:
-                game_over = True
+        game_winner = None
 
+        if round_completed:
+            if room['scores']['player1'] >= 2:
+                game_over = True
+                game_winner = 'player1'
+            elif room['scores']['player2'] >= 2:
+                game_over = True
+                game_winner = 'player2'
+            elif room['current_round'] >= room['max_rounds']:
+                game_over = True
+                if room['scores']['player1'] > room['scores']['player2']:
+                    game_winner = 'player1'
+                elif room['scores']['player2'] > room['scores']['player1']:
+                    game_winner = 'player2'
+                else:
+                    game_winner = 'draw'
+            else:
+                # Start next round: refill lives and clear active buffs
+                room['current_round'] += 1
+                room['lives'] = {'player1': 3, 'player2': 3}
+                room['buffs'] = {'player1': False, 'player2': False}
+        
         if game_over:
             room['status'] = 'finished'
 
+        # Reset choices for next exchange
+        room['choices'] = {'player1': None, 'player2': None}
+
         # Notify all players
         emit('round_result', {
-            'choices': room['choices'],
-            'scores': room['scores'],
+            'round_choices': round_choices,
+            'lives': room['lives'],
+            'items': room['items'],
+            'buffs': room['buffs'],
+            'round_items': {'player1': item1, 'player2': item2},
             'winner': winner,
+            'damage': damage if loser_index is not None else 0,
+            'round_completed': round_completed,
+            'round_winner': round_winner,
+            'scores': room['scores'],
             'current_round': room['current_round'],
             'game_over': game_over,
+            'game_winner': game_winner,
             'room_data': room
         }, room=room_code)
     else:
@@ -293,6 +391,45 @@ def handle_make_choice(data):
             'player_name': player_name,
             'room_data': room
         }, room=room_code)
+
+@socketio.on('use_item')
+def handle_use_item(data):
+    room_code = data.get('room_code')
+    player_name = data.get('player_name')
+    item_id = data.get('item_id')
+
+    if not room_code or room_code not in rooms:
+        emit('error', {'message': 'Room not found'})
+        return
+
+    room = rooms[room_code]
+
+    player_key = None
+    for i, player in enumerate(room['players']):
+        if player['name'] == player_name:
+            player_key = f'player{i+1}'
+            break
+
+    if not player_key:
+        emit('error', {'message': 'Player not found in room'})
+        return
+
+    if item_id not in ('reg', 'ero'):
+        emit('error', {'message': 'Invalid item'})
+        return
+
+    if item_id not in room['items'][player_key]:
+        emit('error', {'message': 'Item not available'})
+        return
+
+    room['items'][player_key].remove(item_id)
+    apply_item_effect(room, player_key, item_id)
+
+    emit('item_used', {
+        'player_name': player_name,
+        'item_id': item_id,
+        'room_data': room
+    }, room=room_code)
 
 @socketio.on('disconnect')
 def handle_disconnect():
