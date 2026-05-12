@@ -8,16 +8,7 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# Configure Socket.IO with polling support for shared hosting environments
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode='threading',
-    ping_timeout=60,
-    ping_interval=25,
-    # Force polling transport for rackhost compatibility
-    transports=['polling', 'websocket']
-)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Store rooms in memory (in production, use a database)
 rooms = {}
