@@ -49,13 +49,12 @@ function normalizeServerAddress(address) {
     value = `http://${value}`;
   }
 
-  value = value.replace(/\/$/, "");
-
-  if (/^https?:\/\/[^/]+$/i.test(value) && !/:\d+$/.test(value.replace(/^https?:\/\//i, ""))) {
-    value += ":5500";
+  try {
+    const url = new URL(value);
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return value;
   }
-
-  return value;
 }
 
 function normalizeRoomIdentifier(value) {
@@ -104,6 +103,73 @@ function setMultiplayerServer(serverAddress) {
 
   localStorage.setItem(SERVER_STORAGE_KEY, normalized);
   return true;
+}
+
+function switchServer(newServerAddress) {
+  return new Promise((resolve, reject) => {
+    // Az eredeti URL-t direktben fogjuk használni
+    let serverUrl = newServerAddress.trim();
+    if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) {
+      serverUrl = `http://${serverUrl}`;
+    }
+    
+    const currentServer = getCurrentMultiplayerServer();
+    
+    // Ha ugyanaz a szerver, nem kell váltani
+    if (currentServer === serverUrl) {
+      console.log("Már erre a szerverhez csatlakozva:", serverUrl);
+      resolve(true);
+      return;
+    }
+
+    console.log(`Szerver váltás: ${currentServer} -> ${serverUrl}`);
+    
+    // Szerver cím elmentése
+    setMultiplayerServer(serverUrl);
+    
+    // Régi socket leválasztása
+    if (socket && socket.connected) {
+      socket.disconnect();
+    }
+
+    // Új socket létrehozása az új szerverhez
+    setTimeout(() => {
+      try {
+        // Az io() függvénynek az URL-t kell adni, nem csak az IP-t!
+        socket = io(serverUrl, {
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          reconnectionAttempts: Infinity,
+          transports: ["polling", "websocket"],
+        });
+
+        window.socket = socket;
+        
+        // Eseménykezelők beállítása az új sockethez
+        setupSocketHandlers();
+        
+        // Várjunk a csatlakozási megerősítésre
+        const connectionTimeout = setTimeout(() => {
+          reject("Kapcsolódási időtúllépés");
+        }, 5000);
+
+        socket.on("connect", () => {
+          clearTimeout(connectionTimeout);
+          console.log("Sikeresen csatlakozva az új szerverhez:", serverUrl);
+          resolve(true);
+        });
+
+        socket.on("connect_error", (err) => {
+          clearTimeout(connectionTimeout);
+          console.error("Hiba az új szerverhez való csatlakozáskor:", err.message);
+          reject(`Kapcsolódási hiba: ${err.message}`);
+        });
+      } catch (error) {
+        reject(`Szerver váltás hiba: ${error.message}`);
+      }
+    }, 300);
+  });
 }
 
 function initSocket() {
@@ -156,7 +222,7 @@ function setupSocketHandlers() {
     
     const statusEl = document.getElementById("createStatus");
     if (typeof showStatus === "function" && statusEl) {
-      showStatus(statusEl, `Szoba létrehozva! Host IP: ${data.room_code}`, "success");
+      showStatus(statusEl, `Szoba létrehozva! Kód: ${data.room_code}`, "success");
     }
 
     setTimeout(() => {
@@ -220,14 +286,11 @@ function setupSocketHandlers() {
 }
 
 function createMultiplayerRoom(playerName, gameType) {
-  const roomIdentifier = normalizeRoomIdentifier(getCurrentMultiplayerServer());
-  
-  console.log("Szoba létrehozása:", { playerName, gameType, roomIdentifier });
+  console.log("Szoba létrehozása:", { playerName, gameType });
   
   socket.emit("create_room", {
     player_name: playerName,
     game_type: gameType,
-    room_identifier: roomIdentifier,
   });
 }
 
@@ -289,6 +352,7 @@ window.joinMultiplayerRoom = joinMultiplayerRoom;
 window.makeChoice = makeChoice;
 window.reconnectPlayer = reconnectPlayer;
 window.setMultiplayerServer = setMultiplayerServer;
+window.switchServer = switchServer;
 window.getCurrentMultiplayerServer = getCurrentMultiplayerServer;
 window.getAvailableRooms = getAvailableRooms;
 window.sessionManager = sessionManager;

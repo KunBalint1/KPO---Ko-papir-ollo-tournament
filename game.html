@@ -387,7 +387,7 @@
         </div>
 
         <div class="action-buttons">
-            <button class="btn btn-copy" onclick="copyRoomCode()">📋 IP másolása</button>
+            <button class="btn btn-copy" onclick="copyRoomCode()">📋 Kód másolása</button>
             <button class="btn btn-leave" onclick="leaveGame()">🚪 Kilépés</button>
         </div>
     </div>
@@ -458,6 +458,21 @@
                 showNotification(`${data.player_name} kilépett a játékból`);
             });
 
+            socket.on('player_left', (data) => {
+                console.log('Player left:', data.player_name);
+                gameState.roomData = data.room_data;
+                updateGameState();
+                updateUI();
+                showNotification(`${data.player_name} elhagyta a szobát`);
+            });
+
+            socket.on('room_deleted', (data) => {
+                showNotification('A szoba megszűnt, visszaléptetés a lobbyba...');
+                setTimeout(() => {
+                    window.location.href = 'tobbjatekos.html';
+                }, 700);
+            });
+
             socket.on('player_reconnected', (data) => {
                 console.log('Player reconnected:', data.player_name);
                 gameState.roomData = data.room_data;
@@ -497,7 +512,7 @@
                 return;
             }
 
-            document.getElementById('roomCodeDisplay').textContent = `Host IP: ${gameState.roomCode}`;
+            document.getElementById('roomCodeDisplay').textContent = `Szobakód: ${gameState.roomCode}`;
 
             setupSocketHandlers();
 
@@ -545,7 +560,7 @@
                 document.getElementById('statusMessage').textContent = 'Tegyen lépést!';
             } else {
                 document.getElementById('statusTitle').textContent = '⏳ Várakozás';
-                document.getElementById('statusMessage').textContent = `Host IP: ${gameState.roomCode}`;
+                document.getElementById('statusMessage').textContent = `Szobakód: ${gameState.roomCode}`;
             }
 
             updatePlayerCards();
@@ -628,14 +643,30 @@
 
         function copyRoomCode() {
             navigator.clipboard.writeText(gameState.roomCode).then(() => {
-                showNotification('Host IP másolva!');
+                showNotification('Kód másolva!');
             });
         }
 
         function leaveGame() {
-            localStorage.removeItem('currentRoom');
-            localStorage.removeItem('currentPlayer');
-            window.location.href = 'tobbjatekos.html';
+            const goBack = () => {
+                localStorage.removeItem('currentRoom');
+                localStorage.removeItem('currentPlayer');
+                window.location.href = 'tobbjatekos.html';
+            };
+
+            if (typeof socket !== 'undefined' && socket && socket.connected) {
+                socket.emit('leave_room', {
+                    room_code: gameState.roomCode,
+                    player_name: gameState.playerName
+                }, () => {
+                    goBack();
+                });
+
+                setTimeout(goBack, 500);
+                return;
+            }
+
+            goBack();
         }
 
         function showStatus(message) {

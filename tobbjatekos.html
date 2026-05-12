@@ -360,13 +360,16 @@
       </div>
 
       <div class="form-group">
-        <label for="serverAddress">LAN szerver cim (pl. 192.168.1.25:5500)</label>
+        <label for="serverAddress">🖥️ LAN szerver IP (pl. 192.168.1.25:5500)</label>
         <input
           type="text"
           id="serverAddress"
           placeholder="localhost:5500"
           maxlength="100"
         />
+        <div class="info-text" style="margin: 8px 0; font-size: 12px;">
+          ⚠️ A HOST gépen futó szerver IP-jét add meg. Összes játékosnak UGYANEZT kell beírnia!
+        </div>
         <div class="button-group" style="margin-top: 10px;">
           <button class="btn btn-confirm" onclick="saveServerAddress()">Szerver mentese</button>
         </div>
@@ -404,7 +407,7 @@
           </select>
         </div>
         <div class="info-text">
-          A szoba létrehozása után meg fog jelenni a host IP címe, amit meg tud osztani
+          A szoba létrehozása után meg fog jelenni a szobakód, amit meg tud osztani
           másokkal.
         </div>
         <div class="button-group">
@@ -449,17 +452,17 @@
         </div>
         
         <div class="form-group">
-          <label for="roomCode">Host IP címe:</label>
+          <label for="roomCode">Szobakód:</label>
           <input
             type="text"
             id="roomCode"
-            placeholder="pl. 192.168.1.25"
+            placeholder="pl. A1B2C3"
             maxlength="100"
           />
         </div>
         
         <div class="info-text">
-          Kattints az "Elérhető szobák keresése" gombra, vagy manuálisan add meg a host IP-jét.
+          Kattints az "Elérhető szobák keresése" gombra, vagy manuálisan add meg a szobakódot.
         </div>
         
         <div class="button-group">
@@ -525,9 +528,10 @@
 
       function joinRoom() {
         const name = document.getElementById("joinPlayerName").value.trim();
-        const hostAddress = document
+        const roomCode = document
           .getElementById("roomCode")
           .value.trim();
+        const serverAddress = document.getElementById("serverAddress").value.trim();
         const statusEl = document.getElementById("joinStatus");
 
         if (!name) {
@@ -535,38 +539,49 @@
           return;
         }
 
-        if (!hostAddress) {
+        if (!roomCode) {
           showStatus(
             statusEl,
-            "Kérjük, adja meg a host IP címét!",
+            "Kérjük, adja meg a szobakódot!",
             "error"
           );
           return;
         }
 
-        if (!window.socket || !window.socket.connected) {
-          showStatus(
-            statusEl,
-            "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a hálózati beállításokat.",
-            "error"
-          );
+        const currentServer = window.getCurrentMultiplayerServer
+          ? window.getCurrentMultiplayerServer()
+          : "";
+
+        const connectAndJoin = () => {
+          if (!window.socket || !window.socket.connected) {
+            showStatus(
+              statusEl,
+              "A szerver nem érhető el. Indítsd a server.py-t, vagy ellenőrizd a hálózati beállításokat.",
+              "error"
+            );
+            return;
+          }
+
+          console.log("Szobához csatlakozás kezdése:", { roomCode, playerName: name });
+          showStatus(statusEl, "Csatlakozás a szobához...", "success");
+          window.joinMultiplayerRoom(roomCode, name);
+        };
+
+        if (serverAddress && currentServer !== serverAddress && window.switchServer) {
+          showStatus(statusEl, "⏳ Csatlakozás a kiválasztott szerverhez...", "info");
+          window.switchServer(serverAddress)
+            .then(() => {
+              showStatus(statusEl, "✓ Szerver kapcsolat kész, csatlakozás a szobához...", "success");
+              setTimeout(connectAndJoin, 300);
+            })
+            .catch((error) => {
+              showStatus(statusEl, `Szerver váltás hiba: ${error}`, "error");
+              console.error("Szerver váltás meghiúsult:", error);
+            });
           return;
         }
 
-        // Szerver címet beállítunk, hogy ugyanarra a szerverhez csatlakozhassunk
-        if (window.setMultiplayerServer) {
-          window.setMultiplayerServer(hostAddress);
-        }
-
-        // A szoba kódja a normalizált IP cím
-        const roomCode = hostAddress.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
-
-        console.log("Szobához csatlakozás kezdése:", { roomCode, playerName: name });
-        
-        showStatus(statusEl, "Csatlakozás a szobához...", "success");
-        
-        // Socket.IO event küldése
-        window.joinMultiplayerRoom(roomCode, name);
+        connectAndJoin();
       }
 
       function startQuickMatch() {
@@ -637,6 +652,12 @@
           return;
         }
 
+        // Ellenőrizzük, hogy csatlakozva vagyunk-e a szerverhez
+        if (!window.socket || !window.socket.connected) {
+          showStatus(statusEl, "❌ Nincs szerver kapcsolat! Kérlek add meg a host szerver IP-jét és kattints a 'Szerver mentese' gombra.", "error");
+          return;
+        }
+
         // Show loading
         container.style.display = "block";
         container.innerHTML = '<div class="room-loading">⏳ Szobák keresése...</div>';
@@ -646,6 +667,7 @@
           
           if (!rooms || rooms.length === 0) {
             container.innerHTML = '<div class="no-rooms-message">📭 Nincsenek elérhető szobák</div>';
+            showStatus(statusEl, "Nincsenek elérhető szobák. Hozzon létre egyet vagy várjon másra!", "info");
             return;
           }
 
@@ -656,22 +678,23 @@
             const slots = `${playerCount}/2`;
             
             html += `
-              <div class="room-item" onclick="selectRoomFromList('${room.code}', '${room.host}')">
+                <div class="room-item" onclick="selectRoomFromList('${room.code}', '${room.host}')">
                 <div class="room-item-header">
                   <span>🏠 ${room.host} (${room.type})</span>
                   <span class="room-item-badge">${slots}</span>
                 </div>
                 <div class="room-item-info">
-                  IP: ${room.code}
+                  Kód: ${room.code}
                 </div>
               </div>
             `;
           });
 
           container.innerHTML = html;
+          showStatus(statusEl, `✓ ${rooms.length} szoba talált!`, "success");
         } catch (error) {
           console.error("Hiba szobák lekérésekor:", error);
-          showStatus(statusEl, "Hiba a szobák lekérésekor!", "error");
+          showStatus(statusEl, "❌ Hiba a szobák lekérésekor! Ellenőrizd a szerver kapcsolatot!", "error");
           container.style.display = "none";
         }
       }
@@ -682,7 +705,7 @@
         
         // Show selected room info
         const statusEl = document.getElementById("joinStatus");
-        showStatus(statusEl, `Kiválasztva: ${hostName} (${roomCode})`, "success");
+        showStatus(statusEl, `Kiválasztva: ${hostName} - kód: ${roomCode}`, "success");
         
         // Optionally focus on player name field
         document.getElementById("joinPlayerName").focus();
@@ -711,9 +734,28 @@
             }
           }
 
-          showStatus(status, `Host LAN címe: ${info.lan_ip}:${info.port}`, "success");
+          showStatus(status, `✓ Host LAN címe: ${info.lan_ip}:${info.port}`, "success");
         } catch (error) {
           console.error("Host cim auto-detect hiba:", error);
+        }
+      }
+
+      function updateServerConnectionStatus() {
+        const statusEl = document.getElementById("serverStatus");
+        if (!statusEl) return;
+
+        if (!window.socket) {
+          showStatus(statusEl, "❌ Socket.IO betöltés alatt...", "error");
+          return;
+        }
+
+        const currentServer = window.getCurrentMultiplayerServer ? window.getCurrentMultiplayerServer() : "ismeretlen";
+        const isConnected = window.socket && window.socket.connected;
+        
+        if (isConnected) {
+          showStatus(statusEl, `✓ Csatlakozva: ${currentServer}`, "success");
+        } else {
+          showStatus(statusEl, `⏳ Próbál kapcsolódni: ${currentServer}...`, "info");
         }
       }
 
@@ -721,7 +763,12 @@
       if (serverInput && window.getCurrentMultiplayerServer) {
         serverInput.value = window.getCurrentMultiplayerServer();
       }
+      
       autoDetectHostAddress();
+      
+      // Státusz frissítés kezdeti és periodikus
+      updateServerConnectionStatus();
+      setInterval(updateServerConnectionStatus, 2000);
     </script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room, rooms as socketio_rooms
 import random
 import string
@@ -8,7 +8,7 @@ import os
 import socket as pysocket
 from threading import Lock
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=os.path.dirname(os.path.abspath(__file__)), static_url_path='')
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(
     app,
@@ -24,6 +24,9 @@ rooms = {}
 sessions = {}  # Store session data
 rooms_lock = Lock()  # Lock for thread-safe room operations
 LEADERBOARD_FILE = 'leaderboard.json'
+
+# Port configuration - reads from PORT environment variable, defaults to 5500
+PORT_NUMBER = int(os.environ.get('PORT', 5500))
 
 def load_leaderboard():
     """Load leaderboard from JSON file"""
@@ -67,7 +70,7 @@ def normalize_room_identifier(room_code):
         value = value.split(':', 1)[0]
     if value in ('localhost', '127.0.0.1', '::1'):
         value = get_lan_ip()
-    return value
+    return value.upper()
 
 def generate_room_code():
     """Generate a unique 6-character room code"""
@@ -102,19 +105,14 @@ def handle_create_room(data):
             emit('error', {'message': 'Játékos neve hiányzik'})
             return
 
-        requested_identifier = normalize_room_identifier(data.get('room_identifier', ''))
-        room_code = requested_identifier or get_lan_ip()
+        room_code = generate_room_code()
+        host_ip = get_lan_ip()
 
         with rooms_lock:
-            # Check if room already exists
-            if room_code in rooms:
-                emit('error', {'message': f'Szoba már létezik ezzel az IP-vel: {room_code}'})
-                return
-
             rooms[room_code] = {
                 'code': room_code,
                 'host': player_name,
-                'host_ip': room_code,
+                'host_ip': host_ip,
                 'type': game_type,
                 'created': datetime.now().isoformat(),
                 'players': [{
@@ -313,6 +311,64 @@ def handle_disconnect():
     except Exception as e:
         print(f"✗ Hiba lecsatlakozáskor: {e}")
 
+@socketio.on('leave_room')
+def handle_leave_room(data):
+    """Handle explicit room leave from the UI."""
+    try:
+        room_code = normalize_room_identifier(data.get('room_code', ''))
+        player_name = data.get('player_name', '').strip()
+
+        if not room_code:
+            return {'success': False, 'message': 'Szoba kódja hiányzik'}
+
+        with rooms_lock:
+            room = rooms.get(room_code)
+            if not room:
+                return {'success': False, 'message': f'Szoba nem talált: {room_code}'}
+
+            player_index = None
+            for i, player in enumerate(room['players']):
+                if player['sid'] == request.sid or (player_name and player['name'] == player_name):
+                    player_index = i
+                    break
+
+            if player_index is None:
+                return {'success': False, 'message': 'Játékos nem talált a szobában'}
+
+            removed_player = room['players'].pop(player_index)
+
+            try:
+                leave_room(room_code)
+            except Exception:
+                pass
+
+            if room['players']:
+                room['status'] = 'waiting' if len(room['players']) == 1 else 'active'
+
+                # Keep a valid host if the departing player was the host.
+                if removed_player.get('isHost'):
+                    room['players'][0]['isHost'] = True
+                    room['host'] = room['players'][0]['name']
+                    room['host_ip'] = room_code
+
+                socketio.emit('player_left', {
+                    'player_name': removed_player['name'],
+                    'room_data': room
+                }, room=room_code)
+            else:
+                del rooms[room_code]
+                socketio.emit('room_deleted', {
+                    'room_code': room_code,
+                    'player_name': removed_player['name']
+                }, room=room_code)
+
+            print(f"✓ Játékos eltávolítva a szobából: {removed_player['name']} -> {room_code}")
+            return {'success': True, 'room_deleted': room_code not in rooms}
+
+    except Exception as e:
+        print(f"✗ Hiba kilépéskor: {e}")
+        return {'success': False, 'message': f'Kilépési hiba: {str(e)}'}
+
 @socketio.on('reconnect_player')
 def handle_reconnect(data):
     """Handle player reconnection"""
@@ -390,7 +446,7 @@ def save_score():
 def host_info():
     """Return host LAN info for easier multiplayer setup on local network."""
     lan_ip = get_lan_ip()
-    port = request.host.split(':')[-1] if ':' in request.host else str(os.environ.get('PORT', 5500))
+    port = request.host.split(':')[-1] if ':' in request.host else str(os.environ.get('PORT', 8080))
 
     return jsonify({
         'lan_ip': lan_ip,
@@ -414,24 +470,23 @@ def get_rooms():
     return jsonify({'rooms': room_list, 'total': len(room_list)})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5500))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     lan_ip = get_lan_ip()
     
     print("\n" + "="*60)
     print("🎮 KÒ, PAPÍR, OLLÓ - MULTIPLAYER SZERVER")
     print("="*60)
-    print(f"🚀 Socket.IO szerver indítása port {port} (debug={debug})...")
-    print(f"📍 LAN cím: http://{lan_ip}:{port}")
-    print(f"🌐 Csatlakozás böngészőből: http://{lan_ip}:{port}/tobbjatekos.html")
-    print(f"📊 Szobák megtekintése: http://{lan_ip}:{port}/rooms")
+    print(f"🚀 Socket.IO szerver indítása port {PORT_NUMBER} (debug={debug})...")
+    print(f"📍 LAN cím: http://{lan_ip}:{PORT_NUMBER}")
+    print(f"🌐 Csatlakozás böngészőből: http://{lan_ip}:{PORT_NUMBER}/tobbjatekos.html")
+    print(f"📊 Szobák megtekintése: http://{lan_ip}:{PORT_NUMBER}/rooms")
     print("="*60 + "\n")
     
     # Production-ready Socket.IO server
     socketio.run(
         app,
         host='0.0.0.0',
-        port=port,
+        port=PORT_NUMBER,
         debug=debug,
         use_reloader=False,  # Disable reloader in production
         log_output=True
