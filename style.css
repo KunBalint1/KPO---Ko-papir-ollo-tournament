@@ -35,6 +35,10 @@ button:hover {
   transform: scale(1.05);
 }
 
+button:hover a {
+  color: #000000;
+}
+
 .button-text {
   display: block;
   text-align: center;
@@ -77,7 +81,7 @@ button:hover {
 
 .title-animation {
   text-align: center;
-  animation: panInOut 3s infinite;
+  color: black;
   margin-top: 10%;
 }
 
@@ -86,6 +90,17 @@ button:hover {
   margin: 20px auto;
   width: 150px;
   height: auto;
+  animation: logoBounce 1.5s ease infinite;
+}
+
+@keyframes logoBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 .game-page {
