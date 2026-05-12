@@ -1,466 +1,530 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Többjátékos - Kő, Papír, Olló</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+      body {
+        font-family: "Arial", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to top, #000000, #ffffff);
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-size: 100% 100%;
+        color: #ffffff;
+      }
 
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 100%;
+        padding: 40px 30px;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 28px;
+      }
+
+      .menu-section {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .menu-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 18px 25px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        text-align: center;
+        width: 100%;
+      }
+
+      .menu-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .menu-item:active {
+        transform: translateY(0);
+      }
+
+      .secondary-item {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 20px auto;
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        font-size: 22px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 25px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 15px;
+      }
+
+      .btn-confirm {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-cancel {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .btn-cancel:hover {
+        background: #e0e0e0;
+      }
+
+      .close {
+        color: #999;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 20px;
+      }
+
+      .close:hover {
+        color: #333;
+      }
+
+      .status-message {
+        text-align: center;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        display: none;
+      }
+
+      .status-message.success {
+        background: #d4edda;
+        color: #155724;
+        display: block;
+      }
+
+      .status-message.error {
+        background: #f8d7da;
+        color: #721c24;
+        display: block;
+      }
+
+      .info-text {
+        text-align: center;
+        color: #777;
+        font-size: 13px;
+        margin-top: 15px;
+        line-height: 1.5;
+      }
+
+      .back-link {
+        text-align: center;
+        margin-top: 30px;
+      }
+
+      .back-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 600px) {
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 100%;
-            padding: 40px 30px;
+          padding: 25px 20px;
+          border-radius: 15px;
         }
 
         h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
-        }
-
-        .menu-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 30px;
+          font-size: 24px;
+          margin-bottom: 25px;
         }
 
         .menu-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 18px 25px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-align: center;
-            width: 100%;
-        }
-
-        .menu-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .menu-item:active {
-            transform: translateY(0);
-        }
-
-        .secondary-item {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+          padding: 16px 20px;
+          font-size: 15px;
         }
 
         .modal-content {
-            background-color: white;
-            margin: 20px auto;
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+          padding: 25px;
         }
 
         .modal-header {
-            font-size: 22px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
+          font-size: 19px;
         }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 15px;
-        }
-
-        .btn-confirm {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-confirm:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-cancel {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-cancel:hover {
-            background: #e0e0e0;
-        }
-
-        .close {
-            color: #999;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            line-height: 20px;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .status-message {
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status-message.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
-        }
-
-        .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
-        }
-
-        .info-text {
-            text-align: center;
-            color: #777;
-            font-size: 13px;
-            margin-top: 15px;
-            line-height: 1.5;
-        }
-
-        .back-link {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        .back-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 25px 20px;
-                border-radius: 15px;
-            }
-
-            h1 {
-                font-size: 24px;
-                margin-bottom: 25px;
-            }
-
-            .menu-item {
-                padding: 16px 20px;
-                font-size: 15px;
-            }
-
-            .modal-content {
-                padding: 25px;
-            }
-
-            .modal-header {
-                font-size: 19px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>⚔️ Többjátékos</h1>
-        
-        <div class="menu-section">
-            <button class="menu-item" onclick="openCreateRoomModal()">🏠 Szoba létrehozása</button>
-            <button class="menu-item secondary-item" onclick="openJoinRoomModal()">🔑 Szobához csatlakozás</button>
-            <button class="menu-item" onclick="startQuickMatch()">⚡ Gyors meccs</button>
-        </div>
+      <h1>⚔️ Többjátékos</h1>
 
-        <div class="back-link">
-            <a href="index.html">← Vissza a főmenübe</a>
-        </div>
+      <div class="menu-section">
+        <button class="menu-item" onclick="openCreateRoomModal()">
+          🏠 Szoba létrehozása
+        </button>
+        <button class="menu-item secondary-item" onclick="openJoinRoomModal()">
+          🔑 Szobához csatlakozás
+        </button>
+        <button class="menu-item" onclick="startQuickMatch()">
+          ⚡ Gyors meccs
+        </button>
+      </div>
+
+      <div class="back-link">
+        <a href="index.html">← Vissza a főmenübe</a>
+      </div>
     </div>
 
     <!-- Create Room Modal -->
     <div id="createRoomModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('createRoomModal')">&times;</span>
-            <div class="modal-header">Új szoba létrehozása</div>
-            <div id="createStatus" class="status-message"></div>
-            <div class="form-group">
-                <label for="playerName">Játékos neve:</label>
-                <input type="text" id="playerName" placeholder="Írja be a nevét" maxlength="20">
-            </div>
-            <div class="form-group">
-                <label for="roomType">Mérkőzés típusa:</label>
-                <select id="roomType">
-                    <option value="1v1">1v1 - Egy az egyben</option>
-                    <option value="best_of_3">Best of 3</option>
-                    <option value="best_of_5">Best of 5</option>
-                </select>
-            </div>
-            <div class="info-text">A szoba létrehozása után meg fog jelenni egy kód, amit meg tud osztani másokkal.</div>
-            <div class="button-group">
-                <button class="btn btn-confirm" onclick="createRoom()">Létrehozás</button>
-                <button class="btn btn-cancel" onclick="closeModal('createRoomModal')">Mégse</button>
-            </div>
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('createRoomModal')"
+          >&times;</span
+        >
+        <div class="modal-header">Új szoba létrehozása</div>
+        <div id="createStatus" class="status-message"></div>
+        <div class="form-group">
+          <label for="playerName">Játékos neve:</label>
+          <input
+            type="text"
+            id="playerName"
+            placeholder="Írja be a nevét"
+            maxlength="20"
+          />
         </div>
+        <div class="form-group">
+          <label for="roomType">Mérkőzés típusa:</label>
+          <select id="roomType">
+            <option value="1v1">1v1 - Egy az egyben</option>
+            <option value="best_of_3">Best of 3</option>
+            <option value="best_of_5">Best of 5</option>
+          </select>
+        </div>
+        <div class="info-text">
+          A szoba létrehozása után meg fog jelenni egy kód, amit meg tud osztani
+          másokkal.
+        </div>
+        <div class="button-group">
+          <button class="btn btn-confirm" onclick="createRoom()">
+            Létrehozás
+          </button>
+          <button
+            class="btn btn-cancel"
+            onclick="closeModal('createRoomModal')"
+          >
+            Mégse
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Join Room Modal -->
     <div id="joinRoomModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('joinRoomModal')">&times;</span>
-            <div class="modal-header">Csatlakozás szobához</div>
-            <div id="joinStatus" class="status-message"></div>
-            <div class="form-group">
-                <label for="joinPlayerName">Játékos neve:</label>
-                <input type="text" id="joinPlayerName" placeholder="Írja be a nevét" maxlength="20">
-            </div>
-            <div class="form-group">
-                <label for="roomCode">Szoba kód:</label>
-                <input type="text" id="roomCode" placeholder="pl. ABC123" maxlength="6" style="text-transform: uppercase;">
-            </div>
-            <div class="info-text">Kérje meg az ellenfelét, hogy adja meg a szoba kódot.</div>
-            <div class="button-group">
-                <button class="btn btn-confirm" onclick="joinRoom()">Csatlakozás</button>
-                <button class="btn btn-cancel" onclick="closeModal('joinRoomModal')">Mégse</button>
-            </div>
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('joinRoomModal')">&times;</span>
+        <div class="modal-header">Csatlakozás szobához</div>
+        <div id="joinStatus" class="status-message"></div>
+        <div class="form-group">
+          <label for="joinPlayerName">Játékos neve:</label>
+          <input
+            type="text"
+            id="joinPlayerName"
+            placeholder="Írja be a nevét"
+            maxlength="20"
+          />
         </div>
+        <div class="form-group">
+          <label for="roomCode">Szoba kód:</label>
+          <input
+            type="text"
+            id="roomCode"
+            placeholder="pl. ABC123"
+            maxlength="6"
+            style="text-transform: uppercase"
+          />
+        </div>
+        <div class="info-text">
+          Kérje meg az ellenfelét, hogy adja meg a szoba kódot.
+        </div>
+        <div class="button-group">
+          <button class="btn btn-confirm" onclick="joinRoom()">
+            Csatlakozás
+          </button>
+          <button class="btn btn-cancel" onclick="closeModal('joinRoomModal')">
+            Mégse
+          </button>
+        </div>
+      </div>
     </div>
 
     <script src="multiplayer.js"></script>
     <script>
-        function openCreateRoomModal() {
-            document.getElementById('createRoomModal').style.display = 'block';
-            document.getElementById('playerName').focus();
+      function openCreateRoomModal() {
+        document.getElementById("createRoomModal").style.display = "block";
+        document.getElementById("playerName").focus();
+      }
+
+      function openJoinRoomModal() {
+        document.getElementById("joinRoomModal").style.display = "block";
+        document.getElementById("joinPlayerName").focus();
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+
+      window.onclick = function (event) {
+        let createModal = document.getElementById("createRoomModal");
+        let joinModal = document.getElementById("joinRoomModal");
+        if (event.target === createModal) {
+          createModal.style.display = "none";
+        }
+        if (event.target === joinModal) {
+          joinModal.style.display = "none";
+        }
+      };
+
+      function createRoom() {
+        const name = document.getElementById("playerName").value.trim();
+        const type = document.getElementById("roomType").value;
+        const statusEl = document.getElementById("createStatus");
+
+        if (!name) {
+          showStatus(statusEl, "Kérjük, adja meg a nevét!", "error");
+          return;
         }
 
-        function openJoinRoomModal() {
-            document.getElementById('joinRoomModal').style.display = 'block';
-            document.getElementById('joinPlayerName').focus();
+        const roomCode = generateRoomCode();
+        const roomData = {
+          code: roomCode,
+          host: name,
+          type: type,
+          created: new Date().toISOString(),
+          players: [{ name: name, isHost: true }],
+        };
+
+        localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+        localStorage.setItem("currentPlayer", name);
+        localStorage.setItem("currentRoom", roomCode);
+
+        showStatus(statusEl, `Szoba létrehozva! Kód: ${roomCode}`, "success");
+
+        setTimeout(() => {
+          window.location.href = `game.html?room=${roomCode}&player=${encodeURIComponent(name)}`;
+        }, 1500);
+      }
+
+      function joinRoom() {
+        const name = document.getElementById("joinPlayerName").value.trim();
+        const code = document
+          .getElementById("roomCode")
+          .value.trim()
+          .toUpperCase();
+        const statusEl = document.getElementById("joinStatus");
+
+        if (!name) {
+          showStatus(statusEl, "Kérjük, adja meg a nevét!", "error");
+          return;
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        if (!code || code.length !== 6) {
+          showStatus(
+            statusEl,
+            "Kérjük, adjon meg egy érvényes szoba kódot!",
+            "error",
+          );
+          return;
         }
 
-        window.onclick = function(event) {
-            let createModal = document.getElementById('createRoomModal');
-            let joinModal = document.getElementById('joinRoomModal');
-            if (event.target === createModal) {
-                createModal.style.display = 'none';
-            }
-            if (event.target === joinModal) {
-                joinModal.style.display = 'none';
-            }
+        const roomData = localStorage.getItem(`room_${code}`);
+        if (!roomData) {
+          showStatus(statusEl, "A szoba nem található!", "error");
+          return;
         }
 
-        function createRoom() {
-            const name = document.getElementById('playerName').value.trim();
-            const type = document.getElementById('roomType').value;
-            const statusEl = document.getElementById('createStatus');
-
-            if (!name) {
-                showStatus(statusEl, 'Kérjük, adja meg a nevét!', 'error');
-                return;
-            }
-
-            const roomCode = generateRoomCode();
-            const roomData = {
-                code: roomCode,
-                host: name,
-                type: type,
-                created: new Date().toISOString(),
-                players: [{ name: name, isHost: true }]
-            };
-
-            localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
-            localStorage.setItem('currentPlayer', name);
-            localStorage.setItem('currentRoom', roomCode);
-
-            showStatus(statusEl, `Szoba létrehozva! Kód: ${roomCode}`, 'success');
-            
-            setTimeout(() => {
-                window.location.href = `game.html?room=${roomCode}&player=${encodeURIComponent(name)}`;
-            }, 1500);
+        const room = JSON.parse(roomData);
+        if (room.players.length >= 2) {
+          showStatus(statusEl, "A szoba már tele van!", "error");
+          return;
         }
 
-        function joinRoom() {
-            const name = document.getElementById('joinPlayerName').value.trim();
-            const code = document.getElementById('roomCode').value.trim().toUpperCase();
-            const statusEl = document.getElementById('joinStatus');
+        room.players.push({ name: name, isHost: false });
+        localStorage.setItem(`room_${code}`, JSON.stringify(room));
+        localStorage.setItem("currentPlayer", name);
+        localStorage.setItem("currentRoom", code);
 
-            if (!name) {
-                showStatus(statusEl, 'Kérjük, adja meg a nevét!', 'error');
-                return;
-            }
+        showStatus(statusEl, "Csatlakozás sikeres!", "success");
 
-            if (!code || code.length !== 6) {
-                showStatus(statusEl, 'Kérjük, adjon meg egy érvényes szoba kódot!', 'error');
-                return;
-            }
+        setTimeout(() => {
+          window.location.href = `game.html?room=${code}&player=${encodeURIComponent(name)}`;
+        }, 1500);
+      }
 
-            const roomData = localStorage.getItem(`room_${code}`);
-            if (!roomData) {
-                showStatus(statusEl, 'A szoba nem található!', 'error');
-                return;
-            }
+      function startQuickMatch() {
+        const name = prompt("Adja meg a játékos nevét:");
+        if (!name || !name.trim()) return;
 
-            const room = JSON.parse(roomData);
-            if (room.players.length >= 2) {
-                showStatus(statusEl, 'A szoba már tele van!', 'error');
-                return;
-            }
+        const roomCode = generateRoomCode();
+        const roomData = {
+          code: roomCode,
+          host: name.trim(),
+          type: "1v1",
+          created: new Date().toISOString(),
+          players: [{ name: name.trim(), isHost: true }],
+          quickMatch: true,
+        };
 
-            room.players.push({ name: name, isHost: false });
-            localStorage.setItem(`room_${code}`, JSON.stringify(room));
-            localStorage.setItem('currentPlayer', name);
-            localStorage.setItem('currentRoom', code);
+        localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+        localStorage.setItem("currentPlayer", name.trim());
+        localStorage.setItem("currentRoom", roomCode);
 
-            showStatus(statusEl, 'Csatlakozás sikeres!', 'success');
-            
-            setTimeout(() => {
-                window.location.href = `game.html?room=${code}&player=${encodeURIComponent(name)}`;
-            }, 1500);
+        alert(`Szoba létrehozva! Kód: ${roomCode}\nVárunk az ellenfélre...`);
+        window.location.href = `game.html?room=${roomCode}&player=${encodeURIComponent(name.trim())}&quickMatch=true`;
+      }
+
+      function generateRoomCode() {
+        return Math.random().toString(36).substr(2, 6).toUpperCase();
+      }
+
+      function showStatus(element, message, type) {
+        element.textContent = message;
+        element.className = `status-message ${type}`;
+
+        if (type === "error") {
+          setTimeout(() => {
+            element.style.display = "none";
+          }, 4000);
         }
-
-        function startQuickMatch() {
-            const name = prompt('Adja meg a játékos nevét:');
-            if (!name || !name.trim()) return;
-
-            const roomCode = generateRoomCode();
-            const roomData = {
-                code: roomCode,
-                host: name.trim(),
-                type: '1v1',
-                created: new Date().toISOString(),
-                players: [{ name: name.trim(), isHost: true }],
-                quickMatch: true
-            };
-
-            localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
-            localStorage.setItem('currentPlayer', name.trim());
-            localStorage.setItem('currentRoom', roomCode);
-
-            alert(`Szoba létrehozva! Kód: ${roomCode}\nVárunk az ellenfélre...`);
-            window.location.href = `game.html?room=${roomCode}&player=${encodeURIComponent(name.trim())}&quickMatch=true`;
-        }
-
-        function generateRoomCode() {
-            return Math.random().toString(36).substr(2, 6).toUpperCase();
-        }
-
-        function showStatus(element, message, type) {
-            element.textContent = message;
-            element.className = `status-message ${type}`;
-            
-            if (type === 'error') {
-                setTimeout(() => {
-                    element.style.display = 'none';
-                }, 4000);
-            }
-        }
+      }
     </script>
-</body>
+  </body>
 </html>
