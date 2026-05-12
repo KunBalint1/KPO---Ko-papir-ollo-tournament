@@ -1,61 +1,117 @@
 
-// Room management
-function createMultiplayerRoom(hostName, gameType = '1v1') {
-    const roomCode = generateRoomCode();
-    const roomData = {
-        code: roomCode,
-        host: hostName,
-        type: gameType,
-        created: new Date().toISOString(),
-        players: [{ name: hostName, isHost: true }],
-        scores: { player1: 0, player2: 0 },
-        choices: { player1: null, player2: null },
-        currentRound: 1,
-        status: 'waiting'
-    };
+// Socket.IO connection
+// Use the current host but with port 5000
+let socket;
+
+function initSocket() {
+    if (socket && socket.connected) {
+        console.log('Socket already initialized and connected');
+        return;
+    }
     
-    localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
-    return roomCode;
+    if (typeof io !== 'undefined') {
+        socket = io(`${window.location.protocol}//${window.location.hostname}:5000`, {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+        });
+        console.log('Socket.IO initialized');
+    } else {
+        console.error('Socket.IO not loaded');
+        setTimeout(initSocket, 100);
+    }
+}
+
+initSocket();
+
+// Room management
+let currentRoom = null;
+let currentPlayer = null;
+
+function createMultiplayerRoom(hostName, gameType = '1v1') {
+    socket.emit('create_room', {
+        player_name: hostName,
+        game_type: gameType
+    });
 }
 
 function joinMultiplayerRoom(roomCode, playerName) {
-    const roomData = localStorage.getItem(`room_${roomCode}`);
-    if (!roomData) return false;
-
-    const room = JSON.parse(roomData);
-    
-    if (room.players.length >= 2) return false;
-    if (room.players.some(p => p.name === playerName)) return false;
-
-    room.players.push({ name: playerName, isHost: false });
-    room.status = 'active';
-    localStorage.setItem(`room_${roomCode}`, JSON.stringify(room));
-    
-    return true;
+    socket.emit('join_room', {
+        room_code: roomCode,
+        player_name: playerName
+    });
 }
 
-function getRoomData(roomCode) {
-    const data = localStorage.getItem(`room_${roomCode}`);
-    return data ? JSON.parse(data) : null;
+function makeChoice(roomCode, playerName, choice) {
+    socket.emit('make_choice', {
+        room_code: roomCode,
+        player_name: playerName,
+        choice: choice
+    });
 }
 
-function updateRoomScore(roomCode, playerIndex, points) {
-    const room = getRoomData(roomCode);
-    if (room) {
-        const key = `player${playerIndex + 1}`;
-        room.scores[key] += points;
-        localStorage.setItem(`room_${roomCode}`, JSON.stringify(room));
-    }
+function reconnectPlayer(roomCode, playerName) {
+    socket.emit('reconnect_player', {
+        room_code: roomCode,
+        player_name: playerName
+    });
 }
 
-function updatePlayerChoice(roomCode, playerIndex, choice) {
-    const room = getRoomData(roomCode);
-    if (room) {
-        const key = `player${playerIndex + 1}`;
-        room.choices[key] = choice;
-        localStorage.setItem(`room_${roomCode}`, JSON.stringify(room));
-    }
-}
+// Socket event handlers
+socket.on('room_created', (data) => {
+    console.log('Room created:', data.room_code);
+    currentRoom = data.room_code;
+    currentPlayer = data.room_data.players[0].name;
+
+    // Store in localStorage for page navigation
+    localStorage.setItem('currentRoom', data.room_code);
+    localStorage.setItem('currentPlayer', currentPlayer);
+
+    // Show success message and redirect
+    showStatus(document.getElementById('createStatus'),
+               `Szoba létrehozva! Kód: ${data.room_code}`, 'success');
+
+    setTimeout(() => {
+        window.location.href = `game.html?room=${data.room_code}&player=${encodeURIComponent(currentPlayer)}`;
+    }, 1500);
+});
+
+socket.on('room_joined', (data) => {
+    console.log('Room joined:', data.room_data.code);
+    currentRoom = data.room_data.code;
+    currentPlayer = data.room_data.players.find(p => p.sid === socket.id)?.name ||
+                   data.room_data.players[1].name; // fallback
+
+    localStorage.setItem('currentRoom', currentRoom);
+    localStorage.setItem('currentPlayer', currentPlayer);
+
+    showStatus(document.getElementById('joinStatus'), 'Csatlakozás sikeres!', 'success');
+
+    setTimeout(() => {
+        window.location.href = `game.html?room=${currentRoom}&player=${encodeURIComponent(currentPlayer)}`;
+    }, 1500);
+});
+
+socket.on('player_joined', (data) => {
+    console.log('Player joined:', data.player_name);
+    // This will be handled in game.html
+});
+
+socket.on('error', (data) => {
+    console.error('Socket error:', data.message);
+    alert('Hiba: ' + data.message);
+});
+
+socket.on('connect', () => {
+    console.log('Connected to server');
+    // Auto-reconnect logic has been moved to game.html
+    // This prevents infinite reconnect loops on the menu page
+});
+
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+});
 
 // Utility functions
 function generateRoomCode() {
@@ -71,30 +127,44 @@ function validateRoomCode(code) {
     return /^[A-Z0-9]{6}$/.test(code.toUpperCase());
 }
 
+// Keep some utility functions for backward compatibility
+function getRoomData(roomCode) {
+    // This is now handled server-side
+    return null;
+}
+
+function updateRoomScore(roomCode, playerIndex, points) {
+    // This is now handled server-side
+}
+
+function updatePlayerChoice(roomCode, playerIndex, choice) {
+    // This is now handled server-side
+}
+
 function isRoomFull(roomCode) {
-    const room = getRoomData(roomCode);
-    return room && room.players.length >= 2;
+    // This is now handled server-side
+    return false;
 }
 
 function isRoomActive(roomCode) {
-    const room = getRoomData(roomCode);
-    return room && room.status === 'active';
+    // This is now handled server-side
+    return true;
 }
 
 function deleteRoom(roomCode) {
-    localStorage.removeItem(`room_${roomCode}`);
+    // This is now handled server-side
 }
 
-// Game logic
+// Game logic (keep for local use if needed)
 function determineWinner(choice1, choice2) {
     if (choice1 === choice2) return 'draw';
-    
+
     const wins = {
         'kő': 'olló',
         'papír': 'kő',
         'olló': 'papír'
     };
-    
+
     return wins[choice1] === choice2 ? 'player1' : 'player2';
 }
 

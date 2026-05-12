@@ -386,6 +386,7 @@
       </div>
     </div>
 
+    <script src="socket.io.min.js"></script>
     <script src="multiplayer.js"></script>
     <script>
       function openCreateRoomModal() {
@@ -423,24 +424,8 @@
           return;
         }
 
-        const roomCode = generateRoomCode();
-        const roomData = {
-          code: roomCode,
-          host: name,
-          type: type,
-          created: new Date().toISOString(),
-          players: [{ name: name, isHost: true }],
-        };
-
-        localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
-        localStorage.setItem("currentPlayer", name);
-        localStorage.setItem("currentRoom", roomCode);
-
-        showStatus(statusEl, `Szoba létrehozva! Kód: ${roomCode}`, "success");
-
-        setTimeout(() => {
-          window.location.href = `game.html?room=${roomCode}&player=${encodeURIComponent(name)}`;
-        }, 1500);
+        // Use Socket.IO instead of localStorage
+        createMultiplayerRoom(name, type);
       }
 
       function joinRoom() {
@@ -465,28 +450,8 @@
           return;
         }
 
-        const roomData = localStorage.getItem(`room_${code}`);
-        if (!roomData) {
-          showStatus(statusEl, "A szoba nem található!", "error");
-          return;
-        }
-
-        const room = JSON.parse(roomData);
-        if (room.players.length >= 2) {
-          showStatus(statusEl, "A szoba már tele van!", "error");
-          return;
-        }
-
-        room.players.push({ name: name, isHost: false });
-        localStorage.setItem(`room_${code}`, JSON.stringify(room));
-        localStorage.setItem("currentPlayer", name);
-        localStorage.setItem("currentRoom", code);
-
-        showStatus(statusEl, "Csatlakozás sikeres!", "success");
-
-        setTimeout(() => {
-          window.location.href = `game.html?room=${code}&player=${encodeURIComponent(name)}`;
-        }, 1500);
+        // Use Socket.IO instead of localStorage
+        joinMultiplayerRoom(code, name);
       }
 
       function startQuickMatch() {
