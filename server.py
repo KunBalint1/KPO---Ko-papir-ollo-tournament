@@ -9,7 +9,14 @@ import socket as pysocket
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode='threading',
+    ping_timeout=60,
+    ping_interval=25,
+    transports=['polling', 'websocket']
+)
 
 # Store rooms in memory (in production, use a database)
 rooms = {}
@@ -331,11 +338,12 @@ def host_info():
     })
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
+    lan_ip = get_lan_ip()
     
     print(f"Starting Socket.IO server on port {port} (debug={debug})...")
+    print(f"LAN address: http://{lan_ip}:{port}")
     
     # Production-ready Socket.IO server
     socketio.run(
