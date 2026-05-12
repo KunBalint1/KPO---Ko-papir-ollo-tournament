@@ -6,16 +6,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# Configure Socket.IO with polling support for shared hosting environments
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode='threading',
-    ping_timeout=60,
-    ping_interval=25,
-    # Force polling transport for rackhost compatibility
-    transports=['polling', 'websocket']
-)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Store rooms in memory (in production, use a database)
 rooms = {}
@@ -245,4 +236,4 @@ def handle_reconnect(data):
                 break
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=443, debug=True)
