@@ -43,7 +43,7 @@
     <script src="fadein.js"></script>
     <script src="ai-ellenfelek.js"></script>
     <script>
-        // Leaderboard functionality
+        
         let currentDifficulty = 'easy';
 
         function getLeaderboardFromCookie() {
@@ -106,7 +106,6 @@
             listEl.innerHTML = html;
         }
 
-        // Tab buttons functionality
         document.querySelectorAll('.leaderboard-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.leaderboard-tab-btn').forEach(b => 
@@ -117,7 +116,6 @@
             });
         });
 
-        // Load initial leaderboard on page load
         loadLeaderboard('easy');
     </script>
     
